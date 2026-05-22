@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>客席モバイルオーダー</title>
+  <style>
+    /* 全体のデザイン調整 */
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+
+    /* ーーー カテゴリータブのスタイル ーーー */
+    .tab-wrapper {
+      position: sticky;
+      top: 0;
+      background-color: #f8f9fa;
+      padding: 10px 0;
+      margin-bottom: 15px;
+      z-index: 10;
+    }
+
+    .tab-container {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 5px;
+      scrollbar-width: none; /* Firefox用 */
+    }
+    .tab-container::-webkit-scrollbar {
+      display: none; /* Chrome, Safari用 */
+    }
+
+    .category-tab {
+      padding: 10px 22px;
+      background-color: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 25px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-weight: bold;
+      font-size: 0.95rem;
+      color: #666;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      transition: all 0.2s ease;
+    }
+
+    /* タブが選択されているとき */
+    .category-tab.active {
+      background-color: #ff9800;
+      color: white;
+      border-color: #ff9800;
+      box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+    }
+
+    /* ーーー メニューカードのスタイル ーーー */
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 15px;
+      margin-bottom: 100px; /* カートエリア分の余白 */
+    }
+
+    .menu-card {
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .menu-name {
+      font-weight: bold;
+      font-size: 1rem;
+      margin: 0 0 8px 0;
+    }
+
+    .menu-price {
+      color: #e65100;
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin: 0 0 12px 0;
+    }
+
+    .order-btn {
+      width: 100%;
+      background-color: #fff;
+      border: 1px solid #ff9800;
+      color: #ff9800;
+      padding: 8px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .order-btn:hover {
+      background-color: #fff3e0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>ご注文（卓番号: <span id="display-table-id">-</span>）</h1>
+
+  <!-- カテゴリータブエリア -->
+  <div class="tab-wrapper">
+    <div id="tab-container" class="tab-container">
+      <!-- ここにJavaScriptで自動生成されます -->
+    </div>
+  </div>
+
+  <!-- メニュー表示エリア -->
+  <div id="menu-container" class="menu-grid">
+    <p style="text-align: center; color: #999;">メニューを読み込み中...</p>
+  </div>
+
+  <script>
+    // 【重要】あなたのGASウェブアプリURLをここに貼り付けてください
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyQ6eL6p1unQH8MeNjFXOJaq9bclIBMbbbS3ybjZVPSOlmBWDUMfqrnVHLbUbpqPvqI-w/exec";
+
+    // URLのパラメータから卓番号（?table=5 など）を取得
+    const urlParams = new URLSearchParams(window.location.search);
+    const tableId = urlParams.get('table') || '未設定';
+    document.getElementById('display-table-id').innerText = tableId;
+
+    let allMenus = []; // GASから届いた全データをここに保存する
+
+    // 1. GASからメニューデータを読み込む
+    function fetchMenus() {
+      fetch(GAS_URL)
+        .then(response => response.json())
+        .then(data => {
+          allMenus = data;
+          
+          // スプレッドシートの「category」列から、重複のないカテゴリーリストを作る
+          // 例: ["フード", "ドリンク", "デザート"]
+          const categories = [...new Set(data.map(item => item.category || "その他"))];
+          
+          // タブボタンを作る
+          renderTabs(categories);
+          
+          // 初期表示として、一番最初のカテゴリーを表示する
+          if (categories.length > 0) {
+            switchCategory(categories[0]);
+          }
+        })
+        .catch(error => {
+          console.error("エラー:", error);
+          document.getElementById('menu-container').innerHTML = '<p style="color:red; text-align:center;">メニューの読み込みに失敗しました。</p>';
+        });
+    }
+
+    // 2. タブを画面に生成する関数
+    function renderTabs(categories) {
+      const tabContainer = document.getElementById('tab-container');
+      tabContainer.innerHTML = ''; // クリア
+      
+      categories.forEach((category, index) => {
+        const button = document.createElement('button');
+        button.className = `category-tab ${index === 0 ? 'active' : ''}`;
+        button.innerText = category;
+        
+        // タブがクリックされた時の処理
+        button.onclick = function() {
+          // すべてのタブから active クラスを消す
+          document.querySelectorAll('.category-tab').forEach(btn => btn.classList.remove('active'));
+          // クリックされたタブだけに active をつける
+          button.classList.add('active');
+          
+          // 表示するメニューを切り替える
+          switchCategory(category);
+        };
+        
+        tabContainer.appendChild(button);
+      });
+    }
+
+    // 3. 選択されたカテゴリーのメニューだけを表示する関数
+    function switchCategory(selectedCategory) {
+      const menuContainer = document.getElementById('menu-container');
+      menuContainer.innerHTML = ''; // クリア
+      
+      // 全データの中から、選択されたカテゴリーと同じものだけを絞り込む
+      const filteredMenus = allMenus.filter(item => (item.category || "その他") === selectedCategory);
+      
+      if (filteredMenus.length === 0) {
+        menuContainer.innerHTML = '<p style="color:#999; text-align:center;">このカテゴリーの商品はありません。</p>';
+        return;
+      }
+
+      // 絞り込んだ商品だけでカードを生成して画面に並べる
+      filteredMenus.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'menu-card';
+        
+        card.innerHTML = `
+          <div>
+            <p class="menu-name">${item.name}</p>
+            <p class="menu-price">${Number(item.price).toLocaleString()}円</p>
+          </div>
+          <button class="order-btn" onclick="sendOrder('${item.menu_id}', '${item.name}')">注文する</button>
+        `;
+        
+        menuContainer.appendChild(card);
+      });
+    }
+
+    // 4. 注文ボタンが押されたときの送信処理
+    function sendOrder(menuId, menuName) {
+      if (tableId === '未設定') {
+        alert('卓番号が設定されていません。URLに「?table=卓番号」をつけてアクセスしてください。');
+        return;
+      }
+      
+      if (!confirm(`【${menuName}】を1点、注文しますか？`)) {
+        return;
+      }
+
+      // GASに送るデータを用意
+      const params = new URLSearchParams();
+      params.append('tableId', tableId);
+      params.append('menuId', menuId);
+      params.append('quantity', '1');
+
+      // POSTで送信
+      fetch(GAS_URL, {
+        method: 'POST',
+        body: params,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      })
+      .then(response => response.json())
+      .then(res => {
+        if (res.status === 'success') {
+          alert('注文を送信しました！');
+        } else {
+          alert('注文エラー: ' + res.message);
+        }
+      })
+      .catch(error => {
+        console.error('送信エラー:', error);
+        alert('注文の送信に失敗しました。');
+      });
+    }
+
+    // 画面が開いた瞬間に実行
+    fetchMenus();
+  </script>
+</body>
+</html>
