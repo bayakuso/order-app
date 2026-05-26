@@ -20,7 +20,7 @@
       margin-bottom: 20px;
     }
 
-    /* ーーー カテゴリータブのスタイル ーーー */
+    /* カテゴリータブのスタイル */
     .tab-wrapper {
       position: sticky;
       top: 0;
@@ -35,10 +35,10 @@
       gap: 10px;
       overflow-x: auto;
       padding-bottom: 5px;
-      scrollbar-width: none; /* Firefox用 */
+      scrollbar-width: none;
     }
     .tab-container::-webkit-scrollbar {
-      display: none; /* Chrome, Safari用 */
+      display: none;
     }
 
     .category-tab {
@@ -55,7 +55,6 @@
       transition: all 0.2s ease;
     }
 
-    /* タブが選択されているとき */
     .category-tab.active {
       background-color: #ff9800;
       color: white;
@@ -63,12 +62,12 @@
       box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
     }
 
-    /* ーーー メニューカードのスタイル ーーー */
+    /* メニューカードのスタイル */
     .menu-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 15px;
-      margin-bottom: 100px; /* カートエリア分の余白 */
+      margin-bottom: 100px;
     }
 
     .menu-card {
@@ -94,6 +93,25 @@
       margin: 0 0 12px 0;
     }
 
+    /* ＋ーボタンのデザイン */
+    .qty-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid #ccc;
+      background: #fff;
+      font-weight: bold;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .qty-btn:active {
+      background: #f0f0f0;
+    }
+
     .order-btn {
       width: 100%;
       background-color: #fff;
@@ -115,28 +133,26 @@
 
   <h1>ご注文（卓番号: <span id="display-table-id">-</span>）</h1>
 
-  <!-- カテゴリータブエリア -->
   <div class="tab-wrapper">
-    <div id="tab-container" class="tab-container">
-      <!-- ここにJavaScriptで自動生成されます -->
-    </div>
+    <div id="tab-container" class="tab-container"></div>
   </div>
 
-  <!-- メニュー表示エリア -->
   <div id="menu-container" class="menu-grid">
     <p style="text-align: center; color: #999;">メニューを読み込み中...</p>
   </div>
 
   <script>
-    // 【重要】あなたのGASウェブアプリURLをここに貼り付けてください
+    // ーーー【ここだけ書き換えて！】ーーー
+    // あなたのGASウェブアプリURLを「」の間に貼り付けてください
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyQ6eL6p1unQH8MeNjFXOJaq9bclIBMbbbS3ybjZVPSOlmBWDUMfqrnVHLbUbpqPvqI-w/exec";
+    // ーーーーーーーーーーーーーーーーーーー
 
-    // URLのパラメータから卓番号（?table=5 など）を取得
+    // URLから卓番号を取得
     const urlParams = new URLSearchParams(window.location.search);
     const tableId = urlParams.get('table') || '未設定';
     document.getElementById('display-table-id').innerText = tableId;
 
-    let allMenus = []; // GASから届いた全データをここに保存する
+    let allMenus = []; 
 
     // 1. GASからメニューデータを読み込む
     function fetchMenus() {
@@ -144,15 +160,8 @@
         .then(response => response.json())
         .then(data => {
           allMenus = data;
-          
-          // スプレッドシートの「category」列から、重複のないカテゴリーリストを作る
-          // 例: ["フード", "ドリンク", "デザート"]
           const categories = [...new Set(data.map(item => item.category || "その他"))];
-          
-          // タブボタンを作る
           renderTabs(categories);
-          
-          // 初期表示として、一番最初のカテゴリーを表示する
           if (categories.length > 0) {
             switchCategory(categories[0]);
           }
@@ -163,24 +172,19 @@
         });
     }
 
-    // 2. タブを画面に生成する関数
+    // 2. タブを生成
     function renderTabs(categories) {
       const tabContainer = document.getElementById('tab-container');
-      tabContainer.innerHTML = ''; // クリア
+      tabContainer.innerHTML = ''; 
       
       categories.forEach((category, index) => {
         const button = document.createElement('button');
         button.className = `category-tab ${index === 0 ? 'active' : ''}`;
         button.innerText = category;
         
-        // タブがクリックされた時の処理
         button.onclick = function() {
-          // すべてのタブから active クラスを消す
           document.querySelectorAll('.category-tab').forEach(btn => btn.classList.remove('active'));
-          // クリックされたタブだけに active をつける
           button.classList.add('active');
-          
-          // 表示するメニューを切り替える
           switchCategory(category);
         };
         
@@ -188,12 +192,11 @@
       });
     }
 
-    // 3. 選択されたカテゴリーのメニューだけを表示する関数
+    // 3. 選択されたカテゴリーのメニューを表示（＋ーボタン付き）
     function switchCategory(selectedCategory) {
       const menuContainer = document.getElementById('menu-container');
-      menuContainer.innerHTML = ''; // クリア
+      menuContainer.innerHTML = ''; 
       
-      // 全データの中から、選択されたカテゴリーと同じものだけを絞り込む
       const filteredMenus = allMenus.filter(item => (item.category || "その他") === selectedCategory);
       
       if (filteredMenus.length === 0) {
@@ -201,41 +204,62 @@
         return;
       }
 
-      // 絞り込んだ商品だけでカードを生成して画面に並べる
       filteredMenus.forEach(item => {
         const card = document.createElement('div');
         card.className = 'menu-card';
+        
+        // 各商品ごとに個数を管理するための目印（ID）を作る
+        const qtyId = `qty-${item.menu_id}`;
         
         card.innerHTML = `
           <div>
             <p class="menu-name">${item.name}</p>
             <p class="menu-price">${Number(item.price).toLocaleString()}円</p>
           </div>
-          <button class="order-btn" onclick="sendOrder('${item.menu_id}', '${item.name}')">注文する</button>
+          
+          <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 12px; margin-top: 5px;">
+            <button type="button" class="qty-btn" onclick="changeQty('${qtyId}', -1)">-</button>
+            <span id="${qtyId}" style="font-size: 1.2rem; font-weight: bold; min-width: 20px; text-align: center;">1</span>
+            <button type="button" class="qty-btn" onclick="changeQty('${qtyId}', 1)">+</button>
+          </div>
+          
+          <button class="order-btn" onclick="sendOrder('${item.menu_id}', '${item.name}', '${qtyId}')">注文する</button>
         `;
         
         menuContainer.appendChild(card);
       });
     }
 
-    // 4. 注文ボタンが押されたときの送信処理
-    function sendOrder(menuId, menuName) {
+    // 4. 【新機能】数量をプラスマイナスする動き
+    function changeQty(qtyId, amount) {
+      const qtySpan = document.getElementById(qtyId);
+      let currentQty = parseInt(qtySpan.innerText);
+      
+      currentQty += amount;
+      if (currentQty < 1) currentQty = 1; // 1個未満にはならないようにする
+      
+      qtySpan.innerText = currentQty;
+    }
+
+    // 5. 注文ボタンが押されたときの送信処理
+    function sendOrder(menuId, menuName, qtyId) {
       if (tableId === '未設定') {
         alert('卓番号が設定されていません。URLに「?table=卓番号」をつけてアクセスしてください。');
         return;
       }
       
-      if (!confirm(`【${menuName}】を1点、注文しますか？`)) {
+      // 画面の数字から、今選ばれている個数を読み取る
+      const quantity = document.getElementById(qtyId).innerText;
+      
+      if (!confirm(`【${menuName}】を ${quantity} 点、注文しますか？`)) {
         return;
       }
 
-      // GASに送るデータを用意
       const params = new URLSearchParams();
       params.append('tableId', tableId);
       params.append('menuId', menuId);
-      params.append('quantity', '1');
+      params.append('quantity', quantity); // 選んだ個数をGASに送る
 
-      // POSTで送信
       fetch(GAS_URL, {
         method: 'POST',
         body: params,
@@ -245,6 +269,7 @@
       .then(res => {
         if (res.status === 'success') {
           alert('注文を送信しました！');
+          document.getElementById(qtyId).innerText = "1"; // 注文後は1個に戻す
         } else {
           alert('注文エラー: ' + res.message);
         }
@@ -255,7 +280,6 @@
       });
     }
 
-    // 画面が開いた瞬間に実行
     fetchMenus();
   </script>
 </body>
