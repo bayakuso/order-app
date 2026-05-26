@@ -9,32 +9,32 @@
     body {
       font-family: 'Helvetica Neue', Arial, sans-serif;
       margin: 0;
-      padding: 16px;
+      padding: 0; /* 横スクロールを綺麗に見せるため、bodyの左右余白は0にします */
       background-color: #f8f9fa;
       color: #333;
+      overflow-x: hidden; /* 画面全体の横揺れ防止 */
     }
     
     h1 {
       text-align: center;
-      font-size: 1.5rem;
-      margin-bottom: 20px;
+      font-size: 1.3rem;
+      margin: 15px 0 5px 0;
     }
 
-    /* カテゴリータブのスタイル */
+    /* カテゴリータブのスタイル（固定表示） */
     .tab-wrapper {
       position: sticky;
       top: 0;
       background-color: #f8f9fa;
-      padding: 10px 0;
-      margin-bottom: 15px;
+      padding: 10px 16px;
       z-index: 10;
+      border-bottom: 1px solid #e0e0e0;
     }
 
     .tab-container {
       display: flex;
       gap: 10px;
       overflow-x: auto;
-      padding-bottom: 5px;
       scrollbar-width: none;
     }
     .tab-container::-webkit-scrollbar {
@@ -42,16 +42,15 @@
     }
 
     .category-tab {
-      padding: 10px 22px;
+      padding: 8px 18px;
       background-color: #fff;
       border: 1px solid #e0e0e0;
       border-radius: 25px;
       cursor: pointer;
       white-space: nowrap;
       font-weight: bold;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: #666;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
       transition: all 0.2s ease;
     }
 
@@ -59,22 +58,41 @@
       background-color: #ff9800;
       color: white;
       border-color: #ff9800;
-      box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
     }
 
-    /* メニューカードのスタイル */
+    /* 横スワイプ用の外枠 */
+    .swipe-view-container {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory; /* スワイプした時にピタッと止まる設定 */
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+    }
+    .swipe-view-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* 各カテゴリーごとの画面（1ページ分） */
+    .category-page {
+      min-width: 100vw; /* 画面横幅ぴったり100% */
+      box-sizing: border-box;
+      scroll-snap-align: start;
+      padding: 16px;
+    }
+
+    /* メニューグリッド（カードの並び） */
     .menu-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 15px;
-      margin-bottom: 100px;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 50px;
     }
 
     .menu-card {
       background: white;
       border-radius: 12px;
       padding: 12px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.04);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -82,18 +100,18 @@
 
     .menu-name {
       font-weight: bold;
-      font-size: 1rem;
-      margin: 0 0 8px 0;
+      font-size: 0.95rem;
+      margin: 0 0 4px 0;
     }
 
     .menu-price {
       color: #e65100;
       font-weight: bold;
-      font-size: 1.1rem;
-      margin: 0 0 12px 0;
+      font-size: 1rem;
+      margin: 0 0 10px 0;
     }
 
-    /* ＋ーボタンのデザイン */
+    /* ＋ーボタン */
     .qty-btn {
       width: 32px;
       height: 32px;
@@ -106,10 +124,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    .qty-btn:active {
-      background: #f0f0f0;
     }
 
     .order-btn {
@@ -121,11 +135,6 @@
       border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .order-btn:hover {
-      background-color: #fff3e0;
     }
   </style>
 </head>
@@ -137,22 +146,22 @@
     <div id="tab-container" class="tab-container"></div>
   </div>
 
-  <div id="menu-container" class="menu-grid">
-    <p style="text-align: center; color: #999;">メニューを読み込み中...</p>
+  <div id="swipe-view" class="swipe-view-container">
+    <p style="text-align: center; color: #999; width: 100vw; padding: 20px;">メニューを読み込み中...</p>
   </div>
 
   <script>
-    // ーーー【ここだけ書き換えて！】ーーー
-    // あなたのGASウェブアプリURLを「」の間に貼り付けてください
+    // ーーー【GASのURL組み込み済み】ーーー
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyQ6eL6p1unQH8MeNjFXOJaq9bclIBMbbbS3ybjZVPSOlmBWDUMfqrnVHLbUbpqPvqI-w/exec";
     // ーーーーーーーーーーーーーーーーーーー
 
-    // URLから卓番号を取得
     const urlParams = new URLSearchParams(window.location.search);
     const tableId = urlParams.get('table') || '未設定';
     document.getElementById('display-table-id').innerText = tableId;
 
     let allMenus = []; 
+    let categoryList = [];
+    let isTabClicking = false; // タブクリック時の自動スクロール中に連動を一時オフにするフラグ
 
     // 1. GASからメニューデータを読み込む
     function fetchMenus() {
@@ -160,15 +169,14 @@
         .then(response => response.json())
         .then(data => {
           allMenus = data;
-          const categories = [...new Set(data.map(item => item.category || "その他"))];
-          renderTabs(categories);
-          if (categories.length > 0) {
-            switchCategory(categories[0]);
-          }
+          categoryList = [...new Set(data.map(item => item.category || "その他"))];
+          
+          renderTabs(categoryList);
+          renderSwipePages(categoryList);
         })
         .catch(error => {
           console.error("エラー:", error);
-          document.getElementById('menu-container').innerHTML = '<p style="color:red; text-align:center;">メニューの読み込みに失敗しました。</p>';
+          document.getElementById('swipe-view').innerHTML = '<p style="color:red; text-align:center; width:100vw;">メニューの読み込みに失敗しました。</p>';
         });
     }
 
@@ -181,84 +189,116 @@
         const button = document.createElement('button');
         button.className = `category-tab ${index === 0 ? 'active' : ''}`;
         button.innerText = category;
+        button.id = `tab-${index}`;
         
+        // タブがクリックされたら、該当のページまで横スクロールさせる
         button.onclick = function() {
+          isTabClicking = true;
+          
           document.querySelectorAll('.category-tab').forEach(btn => btn.classList.remove('active'));
           button.classList.add('active');
-          switchCategory(category);
+          
+          const swipeView = document.getElementById('swipe-view');
+          const targetPage = document.getElementById(`page-${index}`);
+          
+          // タブ要素がはみ出そうなら自動スクロール
+          button.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          
+          // メニューページをスクロール
+          swipeView.scrollTo({
+            left: targetPage.offsetLeft,
+            behavior: 'smooth'
+          });
+          
+          // スクロールアニメーションが終わる頃にフラグを戻す
+          setTimeout(() => { isTabClicking = false; }, 500);
         };
         
         tabContainer.appendChild(button);
       });
     }
 
-    // 3. 選択されたカテゴリーのメニューを表示（＋ーボタン付き）
-    function switchCategory(selectedCategory) {
-      const menuContainer = document.getElementById('menu-container');
-      menuContainer.innerHTML = ''; 
+    // 3. 全カテゴリーのページを横一列に一気に生成する
+    function renderSwipePages(categories) {
+      const swipeView = document.getElementById('swipe-view');
+      swipeView.innerHTML = ''; 
       
-      const filteredMenus = allMenus.filter(item => (item.category || "その他") === selectedCategory);
-      
-      if (filteredMenus.length === 0) {
-        menuContainer.innerHTML = '<p style="color:#999; text-align:center;">このカテゴリーの商品はありません。</p>';
-        return;
-      }
-
-      filteredMenus.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'menu-card';
+      categories.forEach((category, pageIndex) => {
+        const page = document.createElement('div');
+        page.className = 'category-page';
+        page.id = `page-${pageIndex}`;
         
-        // 各商品ごとに個数を管理するための目印（ID）を作る
-        const qtyId = `qty-${item.menu_id}`;
+        const menuGrid = document.createElement('div');
+        menuGrid.className = 'menu-grid';
         
-        card.innerHTML = `
-          <div>
-            <p class="menu-name">${item.name}</p>
-            <p class="menu-price">${Number(item.price).toLocaleString()}円</p>
-          </div>
+        const filteredMenus = allMenus.filter(item => (item.category || "その他") === category);
+        
+        filteredMenus.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'menu-card';
+          const qtyId = `qty-${pageIndex}-${item.menu_id}`; // ページごとにユニークなIDにする
           
-          <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 12px; margin-top: 5px;">
-            <button type="button" class="qty-btn" onclick="changeQty('${qtyId}', -1)">-</button>
-            <span id="${qtyId}" style="font-size: 1.2rem; font-weight: bold; min-width: 20px; text-align: center;">1</span>
-            <button type="button" class="qty-btn" onclick="changeQty('${qtyId}', 1)">+</button>
-          </div>
-          
-          <button class="order-btn" onclick="sendOrder('${item.menu_id}', '${item.name}', '${qtyId}')">注文する</button>
-        `;
+          card.innerHTML = `
+            <div>
+              <p class="menu-name">${item.name}</p>
+              <p class="menu-price">${Number(item.price).toLocaleString()}円</p>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 12px;">
+              <button type="button" class="qty-btn" onclick="changeQty('${qtyId}', -1)">-</button>
+              <span id="${qtyId}" style="font-size: 1.2rem; font-weight: bold; min-width: 20px; text-align: center;">1</span>
+              <button type="button" class="qty-btn" onclick="changeQty('${qtyId}', 1)">+</button>
+            </div>
+            <button class="order-btn" onclick="sendOrder('${item.menu_id}', '${item.name}', '${qtyId}')">注文する</button>
+          `;
+          menuGrid.appendChild(card);
+        });
         
-        menuContainer.appendChild(card);
+        page.appendChild(menuGrid);
+        swipeView.appendChild(page);
       });
     }
 
-    // 4. 【新機能】数量をプラスマイナスする動き
+    // 4. 指でスワイプしてページが変わったら、上のタブのオレンジ色も自動で切り替える
+    document.getElementById('swipe-view').addEventListener('scroll', function() {
+      if (isTabClicking) return; // タブクリックで動いている時は連動処理をスキップ
+      
+      const swipeView = this;
+      const scrollLeft = swipeView.scrollLeft;
+      const pageWidth = window.innerWidth;
+      
+      // 現在どのページが一番大きく表示されているかを計算
+      const currentPageIndex = Math.round(scrollLeft / pageWidth);
+      
+      const activeTab = document.getElementById(`tab-${currentPageIndex}`);
+      if (activeTab && !activeTab.classList.contains('active')) {
+        document.querySelectorAll('.category-tab').forEach(btn => btn.classList.remove('active'));
+        activeTab.classList.add('active');
+        activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    });
+
+    // 5. 数量プラスマイナス
     function changeQty(qtyId, amount) {
       const qtySpan = document.getElementById(qtyId);
       let currentQty = parseInt(qtySpan.innerText);
-      
       currentQty += amount;
-      if (currentQty < 1) currentQty = 1; // 1個未満にはならないようにする
-      
+      if (currentQty < 1) currentQty = 1;
       qtySpan.innerText = currentQty;
     }
 
-    // 5. 注文ボタンが押されたときの送信処理
+    // 6. 注文送信処理
     function sendOrder(menuId, menuName, qtyId) {
       if (tableId === '未設定') {
-        alert('卓番号が設定されていません。URLに「?table=卓番号」をつけてアクセスしてください。');
+        alert('卓番号が設定されていません。');
         return;
       }
-      
-      // 画面の数字から、今選ばれている個数を読み取る
       const quantity = document.getElementById(qtyId).innerText;
-      
-      if (!confirm(`【${menuName}】を ${quantity} 点、注文しますか？`)) {
-        return;
-      }
+      if (!confirm(`【${menuName}】を ${quantity} 点、注文しますか？`)) return;
 
       const params = new URLSearchParams();
       params.append('tableId', tableId);
       params.append('menuId', menuId);
-      params.append('quantity', quantity); // 選んだ個数をGASに送る
+      params.append('quantity', quantity);
 
       fetch(GAS_URL, {
         method: 'POST',
@@ -269,7 +309,7 @@
       .then(res => {
         if (res.status === 'success') {
           alert('注文を送信しました！');
-          document.getElementById(qtyId).innerText = "1"; // 注文後は1個に戻す
+          document.getElementById(qtyId).innerText = "1";
         } else {
           alert('注文エラー: ' + res.message);
         }
@@ -283,4 +323,5 @@
     fetchMenus();
   </script>
 </body>
+</html>
 </html>
