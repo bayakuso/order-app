@@ -73,30 +73,30 @@
         }
 
         // 🔽【修正】GETから「POST（フォームデータ形式）」へ完全移行しました！
-        async function checkout(tableId, total) {
-            if (!confirm(tableId + "番卓の会計（合計: ¥" + total + "）を完了しますか？\nこの操作でシートのステータスが「会計済」に変わります。")) return;
+       async function checkout(tableId, total) {
+    if (!confirm(tableId + "番卓の会計を完了しますか？")) return;
 
-            try {
-                // ブラウザのCORS制限を100%回避し、中身の文字データを確実にGASへ届けるための設定
-                const formData = new URLSearchParams();
-                formData.append('action', 'checkout');
-                formData.append('tableId', tableId);
+    try {
+        const formData = new URLSearchParams();
+        formData.append('action', 'checkout');
+        formData.append('tableId', tableId);
 
-                // GASの「doPost」に向けて確実に送信！
-                await fetch(GAS_URL, {
-                    method: "POST",
-                    body: formData,
-                    mode: "no-cors" // ブラウザのエラーを完全にスルーさせます
-                });
-
-                alert(tableId + "番卓の会計処理を送信しました！");
-                
-                // スプレッドシートが「会計済」に書き換わるのを少し待ってから再読み込み
-                setTimeout(loadActiveOrders, 2500);
-            } catch (e) {
-                alert("会計処理に失敗しました: " + e);
-            }
+        // mode: "no-cors" を削除！これで結果を受け取れます
+        const response = await fetch(GAS_URL, {
+            method: "POST",
+            body: formData,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        
+        const result = await response.json();
+        if(result.status === 'success') {
+            alert("会計処理完了しました！");
+            loadActiveOrders(); 
         }
+    } catch (e) {
+        alert("会計処理に失敗しました: " + e);
+    }
+}
     </script>
 </body>
 </html>
