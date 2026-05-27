@@ -135,7 +135,7 @@
       cursor: pointer;
     }
 
-    /* ーーー【新設】画面下部に固定されるカートバー ーーー */
+    /* 画面下部固定カートバー */
     .cart-bar {
       position: fixed;
       bottom: 0;
@@ -154,12 +154,6 @@
     .cart-info {
       font-size: 0.9rem;
       color: #666;
-    }
-
-    .cart-total-price {
-      font-size: 1.3rem;
-      font-weight: bold;
-      color: #e65100;
     }
 
     .checkout-btn {
@@ -194,8 +188,8 @@
 
   <div class="cart-bar">
     <div class="cart-info">
-  <div>選択中の商品: <span id="cart-count" style="font-weight:bold; font-size: 1.1rem; color: #ff9800;">0</span> 点</div>
-  </div>
+      <div>選択中の商品: <span id="cart-count" style="font-weight:bold; font-size: 1.1rem; color: #ff9800;">0</span> 点</div>
+      </div>
     <button id="checkout-btn" class="checkout-btn" onclick="submitOrder()" disabled>注文を確定する</button>
   </div>
 
@@ -211,8 +205,6 @@
     let allMenus = []; 
     let categoryList = [];
     let isTabClicking = false;
-    
-    // 【新機能】カートの中身を記憶する配列
     let cart = [];
 
     // 1. GASからメニューデータを読み込む
@@ -254,7 +246,7 @@
       });
     }
 
-    // 3. 全カテゴリーのページを横一列に一気に生成する
+    // 3. 全カテゴリーのページを横一列に生成
     function renderSwipePages(categories) {
       const swipeView = document.getElementById('swipe-view');
       swipeView.innerHTML = ''; 
@@ -293,7 +285,7 @@
       });
     }
 
-    // 4. 指でスワイプした時のタブ連動処理
+    // 4. スワイプ時のタブ連動処理
     document.getElementById('swipe-view').addEventListener('scroll', function() {
       if (isTabClicking) return;
       const swipeView = this;
@@ -317,43 +309,35 @@
       qtySpan.innerText = currentQty;
     }
 
-    // 6. 【新機能】選択した商品をカート（プール）に入れる処理
+    // 6. 商品をカートに入れる処理
     function addToCart(menuId, name, price, qtyId) {
       const qtySpan = document.getElementById(qtyId);
       const quantity = parseInt(qtySpan.innerText);
 
-      // すでに同じ商品がカートに入っているか確認
       const existingItem = cart.find(item => item.menuId === menuId);
-
       if (existingItem) {
-        // すでにあれば個数を合算
         existingItem.quantity += quantity;
       } else {
-        // なければ新しくカートに追加
         cart.push({ menuId: menuId, name: name, price: price, quantity: quantity });
       }
 
-      // カートに入れたら、その商品の入力用数字は1に戻す（親切設計）
       qtySpan.innerText = "1";
-
-      // 下のカートバーの表示を更新
       updateCartBar();
     }
 
-    // 7. 【新機能】カートバーの表示（合計金額・点数）を更新する処理
+    // 7. カートバーの表示更新（金額処理によるエラーを防ぐため非表示用に対応）
     function updateCartBar() {
       let totalCount = 0;
-      let totalPrice = 0;
+      // let totalPrice = 0; // 金額非表示のためコメントアウト
 
       cart.forEach(item => {
         totalCount += item.quantity;
-        totalPrice += item.price * item.quantity;
+        // totalPrice += item.price * item.quantity; // 金額非表示のためコメントアウト
       });
 
       document.getElementById('cart-count').innerText = totalCount;
-      document.getElementById('cart-total').innerText = totalPrice.toLocaleString();
+      // document.getElementById('cart-total').innerText = totalPrice.toLocaleString(); // エラー原因の行をコメントアウト
 
-      // カートが空ならボタンを押せなくする
       const checkoutBtn = document.getElementById('checkout-btn');
       if (cart.length > 0) {
         checkoutBtn.disabled = false;
@@ -362,14 +346,13 @@
       }
     }
 
-    // 8. 【新機能】まとめてGASに送信する処理（注文の確定）
+    // 8. まとめてGASに送信する処理（注文の確定）
     function submitOrder() {
       if (tableId === '未設定') {
         alert('卓番号が設定されていません。');
         return;
       }
 
-      // カートの中身を一覧テキストにする（確認ダイアログ用）
       let confirmText = "以下の内容で注文を確定しますか？\n\n";
       cart.forEach(item => {
         confirmText += `・${item.name} × ${item.quantity}\n`;
@@ -377,9 +360,6 @@
 
       if (!confirm(confirmText)) return;
 
-      // ーーー【ここがポイント】カート内の商品を順番にすべてGASに連続送信する ーーー
-      // ※現在のGASの仕様（1つのPOSTで1品処理）に合わせて、プログラムで自動で連続送信（ループ）させます。
-      
       const promises = cart.map(item => {
         const params = new URLSearchParams();
         params.append('tableId', tableId);
@@ -393,12 +373,11 @@
         }).then(response => response.json());
       });
 
-      // すべての送信が完了した時の処理
       Promise.all(promises)
         .then(results => {
           alert('すべての注文を送信しました！厨房へ伝票が飛びます。');
-          cart = []; // カートを空にする
-          updateCartBar(); // バーの表示をリセット
+          cart = [];
+          updateCartBar();
         })
         .catch(error => {
           console.error('送信エラー:', error);
