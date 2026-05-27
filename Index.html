@@ -48,11 +48,18 @@
     document.getElementById('display-table-id').innerText = tableId;
 
     let allMenus = [], categoryList = [], cart = [];
+    let isTabClicking = false; // タブクリック時の自動スクロール中にイベントの衝突を防ぐフラグ
 
     function fetchMenus() {
       fetch(GAS_URL)
         .then(res => res.json())
-        .then(data => { allMenus = data; categoryList = [...new Set(data.map(i => i.category || "その他"))]; renderTabs(categoryList); renderSwipePages(categoryList); })
+        .then(data => { 
+          allMenus = data; 
+          categoryList = [...new Set(data.map(i => i.category || "その他"))]; 
+          renderTabs(categoryList); 
+          renderSwipePages(categoryList); 
+          initSwipeListener(); // スワイプ監視の初期化
+        })
         .catch(err => { console.error(err); document.getElementById('swipe-view').innerHTML = '<p>読み込み失敗</p>'; });
     }
 
@@ -61,11 +68,21 @@
       cats.forEach((cat, i) => {
         const btn = document.createElement('button');
         btn.className = `category-tab ${i === 0 ? 'active' : ''}`;
+        btn.id = `tab-btn-${i}`;
         btn.innerText = cat;
         btn.onclick = () => {
+          isTabClicking = true; // スワイプイベントを一時的に無視する
           document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
+          
+          // タブ自体を画面中央付近へスクロール
+          btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          
+          // 該当ページへスクロール
           document.getElementById(`page-${i}`).scrollIntoView({ behavior: 'smooth' });
+          
+          // スクロール完了後にフラグを解除（少し猶予を持たせる）
+          setTimeout(() => { isTabClicking = false; }, 600);
         };
         container.appendChild(btn);
       });
@@ -73,6 +90,7 @@
 
     function renderSwipePages(cats) {
       const swipeView = document.getElementById('swipe-view');
+      swipeView.innerHTML = ''; // 「読み込み中...」を消去
       cats.forEach((cat, idx) => {
         const page = document.createElement('div');
         page.className = 'category-page'; page.id = `page-${idx}`;
@@ -90,46 +108,4 @@
       });
     }
 
-    function changeQty(id, amt) { const el = document.getElementById(id); let q = parseInt(el.innerText) + amt; el.innerText = q < 1 ? 1 : q; }
-    function addToCart(id, name, price, qtyId) {
-      const q = parseInt(document.getElementById(qtyId).innerText);
-      const ex = cart.find(i => i.menuId === id);
-      ex ? ex.quantity += q : cart.push({ menuId: id, name, price, quantity: q });
-      document.getElementById('cart-count').innerText = cart.reduce((sum, i) => sum + i.quantity, 0);
-      document.getElementById('checkout-btn').disabled = false;
-    }
-
-    // ★ 一括送信処理（10個まとめてもエラーにならない）
-    async function submitOrder() {
-      if (!confirm("注文を確定しますか？")) return;
-      document.getElementById('checkout-btn').disabled = true;
-      try {
-        const params = new URLSearchParams();
-        params.append('action', 'bulk_order');
-        params.append('tableId', tableId);
-        params.append('cart', JSON.stringify(cart)); // カート内容をJSONでまとめて送信
-
-        const response = await fetch(GAS_URL, { 
-          method: 'POST', 
-          body: params, 
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' } 
-        });
-        
-        const result = await response.json();
-        if (result.status === 'success') {
-            alert('注文完了しました！');
-            cart = []; document.getElementById('cart-count').innerText = '0';
-        } else {
-            throw new Error(result.message);
-        }
-      } catch (e) { 
-        alert('送信エラーが発生しました。もう一度お試しください。');
-        console.error(e);
-      }
-      document.getElementById('checkout-btn').disabled = false;
-    }
-
-    fetchMenus();
-  </script>
-</body>
-</html>
+    // ★ スワイプを検知して上のタブの色を追従させる
