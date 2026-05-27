@@ -47,7 +47,7 @@
     const tableId = urlParams.get('table') || '未設定';
     document.getElementById('display-table-id').innerText = tableId;
 
-    let allMenus = [], categoryList = [], isTabClicking = false, cart = [];
+    let allMenus = [], categoryList = [], cart = [];
 
     function fetchMenus() {
       fetch(GAS_URL)
@@ -99,19 +99,33 @@
       document.getElementById('checkout-btn').disabled = false;
     }
 
-    // ★ 順番待ち送信に変更
+    // ★ 一括送信処理（10個まとめてもエラーにならない）
     async function submitOrder() {
       if (!confirm("注文を確定しますか？")) return;
       document.getElementById('checkout-btn').disabled = true;
       try {
-        for (const item of cart) {
-          const params = new URLSearchParams();
-          params.append('tableId', tableId); params.append('menuId', item.menuId); params.append('quantity', item.quantity);
-          await fetch(GAS_URL, { method: 'POST', body: params, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+        const params = new URLSearchParams();
+        params.append('action', 'bulk_order');
+        params.append('tableId', tableId);
+        params.append('cart', JSON.stringify(cart)); // カート内容をJSONでまとめて送信
+
+        const response = await fetch(GAS_URL, { 
+          method: 'POST', 
+          body: params, 
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' } 
+        });
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert('注文完了しました！');
+            cart = []; document.getElementById('cart-count').innerText = '0';
+        } else {
+            throw new Error(result.message);
         }
-        alert('注文完了しました！');
-        cart = []; document.getElementById('cart-count').innerText = '0';
-      } catch (e) { alert('送信エラーが発生しました。'); }
+      } catch (e) { 
+        alert('送信エラーが発生しました。もう一度お試しください。');
+        console.error(e);
+      }
       document.getElementById('checkout-btn').disabled = false;
     }
 
