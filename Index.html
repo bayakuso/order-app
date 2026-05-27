@@ -6,424 +6,113 @@
   <title>客席モバイルオーダー</title>
   <style>
     /* 全体のデザイン調整 */
-    body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f8f9fa;
-      color: #333;
-      overflow-x: hidden;
-    }
-    
-    h1 {
-      text-align: center;
-      font-size: 1.3rem;
-      margin: 15px 0 5px 0;
-    }
-
-    /* カテゴリータブのスタイル */
-    .tab-wrapper {
-      position: sticky;
-      top: 0;
-      background-color: #f8f9fa;
-      padding: 10px 16px;
-      z-index: 10;
-      border-bottom: 1px solid #e0e0e0;
-    }
-
-    .tab-container {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .tab-container::-webkit-scrollbar {
-      display: none;
-    }
-
-    .category-tab {
-      padding: 8px 18px;
-      background-color: #fff;
-      border: 1px solid #e0e0e0;
-      border-radius: 25px;
-      cursor: pointer;
-      white-space: nowrap;
-      font-weight: bold;
-      font-size: 0.9rem;
-      color: #666;
-    }
-
-    .category-tab.active {
-      background-color: #ff9800;
-      color: white;
-      border-color: #ff9800;
-    }
-
-    /* 横スワイプ用の外枠 */
-    .swipe-view-container {
-      display: flex;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      scroll-behavior: smooth;
-      scrollbar-width: none;
-    }
-    .swipe-view-container::-webkit-scrollbar {
-      display: none;
-    }
-
-    .category-page {
-      min-width: 100vw;
-      box-sizing: border-box;
-      scroll-snap-align: start;
-      padding: 16px;
-    }
-
-    /* メニューグリッド */
-    .menu-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 14px;
-      margin-bottom: 100px;
-    }
-
-    /* メニューカード全体の調整 */
-    .menu-card {
-      background: white;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.04);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      position: relative;
-    }
-
-    /* メニュー画像用のスタイル */
-    .menu-img-wrapper {
-      width: 100%;
-      height: 110px;
-      background-color: #eaeaea;
-      position: relative;
-    }
-    .menu-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    /* 画像が無いとき用のダミー表示 */
-    .no-img-text {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: #999;
-      font-size: 0.8rem;
-    }
-
-    /* カード内のテキスト部分の余白調整 */
-    .menu-card-body {
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-      justify-content: space-between;
-    }
-
-    .menu-name {
-      font-weight: bold;
-      font-size: 0.95rem;
-      margin: 0 0 4px 0;
-    }
-
-    .menu-price {
-      color: #e65100;
-      font-weight: bold;
-      font-size: 1rem;
-      margin: 0 0 10px 0;
-    }
-
-    /* ＋ーボタン */
-    .qty-btn {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: 1px solid #ccc;
-      background: #fff;
-      font-weight: bold;
-      font-size: 1.2rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* カートに入れるボタン */
-    .add-cart-btn {
-      width: 100%;
-      background-color: #fff;
-      border: 1px solid #ff9800;
-      color: #ff9800;
-      padding: 8px;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    /* 画面下部固定カートバー */
-    .cart-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background-color: #fff;
-      box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
-      padding: 12px 20px;
-      box-sizing: border-box;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 100;
-    }
-
-    .cart-info {
-      font-size: 0.9rem;
-      color: #666;
-    }
-
-    .checkout-btn {
-      background-color: #ff9800;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 25px;
-      font-weight: bold;
-      font-size: 1rem;
-      cursor: pointer;
-      box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
-    }
-    .checkout-btn:disabled {
-      background-color: #ccc;
-      box-shadow: none;
-      cursor: not-allowed;
-    }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; color: #333; overflow-x: hidden; }
+    h1 { text-align: center; font-size: 1.3rem; margin: 15px 0 5px 0; }
+    .tab-wrapper { position: sticky; top: 0; background-color: #f8f9fa; padding: 10px 16px; z-index: 10; border-bottom: 1px solid #e0e0e0; }
+    .tab-container { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; }
+    .tab-container::-webkit-scrollbar { display: none; }
+    .category-tab { padding: 8px 18px; background-color: #fff; border: 1px solid #e0e0e0; border-radius: 25px; cursor: pointer; white-space: nowrap; font-weight: bold; font-size: 0.9rem; color: #666; }
+    .category-tab.active { background-color: #ff9800; color: white; border-color: #ff9800; }
+    .swipe-view-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; }
+    .swipe-view-container::-webkit-scrollbar { display: none; }
+    .category-page { min-width: 100vw; box-sizing: border-box; scroll-snap-align: start; padding: 16px; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-bottom: 100px; }
+    .menu-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.04); display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+    .menu-img-wrapper { width: 100%; height: 110px; background-color: #eaeaea; position: relative; }
+    .menu-img { width: 100%; height: 100%; object-fit: cover; }
+    .no-img-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #999; font-size: 0.8rem; }
+    .menu-card-body { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
+    .menu-name { font-weight: bold; font-size: 0.95rem; margin: 0 0 4px 0; }
+    .menu-price { color: #e65100; font-weight: bold; font-size: 1rem; margin: 0 0 10px 0; }
+    .qty-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .add-cart-btn { width: 100%; background-color: #fff; border: 1px solid #ff9800; color: #ff9800; padding: 8px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #fff; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); padding: 12px 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+    .cart-info { font-size: 0.9rem; color: #666; }
+    .checkout-btn { background-color: #ff9800; color: white; border: none; padding: 12px 24px; border-radius: 25px; font-weight: bold; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3); }
+    .checkout-btn:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; }
   </style>
 </head>
 <body>
-
   <h1>ご注文（卓番号: <span id="display-table-id">-</span>）</h1>
-
-  <div class="tab-wrapper">
-    <div id="tab-container" class="tab-container"></div>
-  </div>
-
-  <div id="swipe-view" class="swipe-view-container">
-    <p style="text-align: center; color: #999; width: 100vw; padding: 20px;">メニューを読み込み中...</p>
-  </div>
-
+  <div class="tab-wrapper"><div id="tab-container" class="tab-container"></div></div>
+  <div id="swipe-view" class="swipe-view-container"><p style="text-align: center; color: #999; width: 100vw; padding: 20px;">メニューを読み込み中...</p></div>
   <div class="cart-bar">
-    <div class="cart-info">
-      <div>選択中の商品: <span id="cart-count" style="font-weight:bold; font-size: 1.1rem; color: #ff9800;">0</span> 点</div>
-    </div>
+    <div class="cart-info"><div>選択中の商品: <span id="cart-count" style="font-weight:bold; font-size: 1.1rem; color: #ff9800;">0</span> 点</div></div>
     <button id="checkout-btn" class="checkout-btn" onclick="submitOrder()" disabled>注文を確定する</button>
   </div>
 
   <script>
-    // ーーー【GASのURL組み込み済み】ーーー
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyQ6eL6p1unQH8MeNjFXOJaq9bclIBMbbbS3ybjZVPSOlmBWDUMfqrnVHLbUbpqPvqI-w/exec";
-    // ーーーーーーーーーーーーーーーーーーー
-
     const urlParams = new URLSearchParams(window.location.search);
     const tableId = urlParams.get('table') || '未設定';
     document.getElementById('display-table-id').innerText = tableId;
 
-    let allMenus = []; 
-    let categoryList = [];
-    let isTabClicking = false;
-    let cart = [];
+    let allMenus = [], categoryList = [], isTabClicking = false, cart = [];
 
-    // 1. GASからメニューデータを読み込む
     function fetchMenus() {
       fetch(GAS_URL)
-        .then(response => response.json())
-        .then(data => {
-          allMenus = data;
-          categoryList = [...new Set(data.map(item => item.category || "その他"))];
-          renderTabs(categoryList);
-          renderSwipePages(categoryList);
-        })
-        .catch(error => {
-          console.error("エラー:", error);
-          document.getElementById('swipe-view').innerHTML = '<p style="color:red; text-align:center; width:100vw;">メニューの読み込みに失敗しました。</p>';
-        });
+        .then(res => res.json())
+        .then(data => { allMenus = data; categoryList = [...new Set(data.map(i => i.category || "その他"))]; renderTabs(categoryList); renderSwipePages(categoryList); })
+        .catch(err => { console.error(err); document.getElementById('swipe-view').innerHTML = '<p>読み込み失敗</p>'; });
     }
 
-    // 2. タブを生成
-    function renderTabs(categories) {
-      const tabContainer = document.getElementById('tab-container');
-      tabContainer.innerHTML = ''; 
-      categories.forEach((category, index) => {
-        const button = document.createElement('button');
-        button.className = `category-tab ${index === 0 ? 'active' : ''}`;
-        button.innerText = category;
-        button.id = `tab-${index}`;
-        button.onclick = function() {
-          isTabClicking = true;
-          document.querySelectorAll('.category-tab').forEach(btn => btn.classList.remove('active'));
-          button.classList.add('active');
-          const swipeView = document.getElementById('swipe-view');
-          const targetPage = document.getElementById(`page-${index}`);
-          button.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-          swipeView.scrollTo({ left: targetPage.offsetLeft, behavior: 'smooth' });
-          setTimeout(() => { isTabClicking = false; }, 500);
+    function renderTabs(cats) {
+      const container = document.getElementById('tab-container');
+      cats.forEach((cat, i) => {
+        const btn = document.createElement('button');
+        btn.className = `category-tab ${i === 0 ? 'active' : ''}`;
+        btn.innerText = cat;
+        btn.onclick = () => {
+          document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById(`page-${i}`).scrollIntoView({ behavior: 'smooth' });
         };
-        tabContainer.appendChild(button);
+        container.appendChild(btn);
       });
     }
 
-    // 3. 全カテゴリーのページを横一列に生成
-    function renderSwipePages(categories) {
+    function renderSwipePages(cats) {
       const swipeView = document.getElementById('swipe-view');
-      swipeView.innerHTML = ''; 
-      
-      categories.forEach((category, pageIndex) => {
+      cats.forEach((cat, idx) => {
         const page = document.createElement('div');
-        page.className = 'category-page';
-        page.id = `page-${pageIndex}`;
-        
-        const menuGrid = document.createElement('div');
-        menuGrid.className = 'menu-grid';
-        
-        const filteredMenus = allMenus.filter(item => (item.category || "その他") === category);
-        
-        filteredMenus.forEach(item => {
-          const card = document.createElement('div');
-          card.className = 'menu-card';
-          const qtyId = `qty-${pageIndex}-${item.menu_id}`;
-          
-          // 画像URL（image列）が入っているか判定
-          const imgHtml = item.image 
-            ? `<img src="${item.image}" class="menu-img" alt="${item.name}">` 
-            : `<span class="no-img-text">No Image</span>`;
-          
-          card.innerHTML = `
-            <div class="menu-img-wrapper">
-              ${imgHtml}
-            </div>
-            
-            <div class="menu-card-body">
-              <div>
-                <p class="menu-name">${item.name}</p>
-                <p class="menu-price">${Number(item.price).toLocaleString()}円</p>
-              </div>
-              <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 12px;">
-                <button type="button" class="qty-btn" onclick="changeQty('${qtyId}', -1)">-</button>
-                <span id="${qtyId}" style="font-size: 1.2rem; font-weight: bold; min-width: 20px; text-align: center;">1</span>
-                <button type="button" class="qty-btn" onclick="changeQty('${qtyId}', 1)">+</button>
-              </div>
-              <button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${item.name}', ${item.price}, '${qtyId}')">カートへ追加</button>
-            </div>
-          `;
-          menuGrid.appendChild(card);
+        page.className = 'category-page'; page.id = `page-${idx}`;
+        const grid = document.createElement('div'); grid.className = 'menu-grid';
+        allMenus.filter(i => (i.category || "その他") === cat).forEach(item => {
+          const card = document.createElement('div'); card.className = 'menu-card';
+          const qtyId = `qty-${idx}-${item.menu_id}`;
+          card.innerHTML = `<div class="menu-img-wrapper">${item.image ? `<img src="${item.image}" class="menu-img">` : '<span class="no-img-text">No Image</span>'}</div>` +
+            `<div class="menu-card-body"><p class="menu-name">${item.name}</p><p class="menu-price">${Number(item.price).toLocaleString()}円</p>` +
+            `<div style="display:flex; justify-content:center; gap:10px;"><button class="qty-btn" onclick="changeQty('${qtyId}', -1)">-</button><span id="${qtyId}">1</span><button class="qty-btn" onclick="changeQty('${qtyId}', 1)">+</button></div>` +
+            `<button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${item.name}', ${item.price}, '${qtyId}')">カートへ追加</button></div>`;
+          grid.appendChild(card);
         });
-        page.appendChild(menuGrid);
-        swipeView.appendChild(page);
+        page.appendChild(grid); swipeView.appendChild(page);
       });
     }
 
-    // 4. スワイプ時のタブ連動処理
-    document.getElementById('swipe-view').addEventListener('scroll', function() {
-      if (isTabClicking) return;
-      const swipeView = this;
-      const scrollLeft = swipeView.scrollLeft;
-      const pageWidth = window.innerWidth;
-      const currentPageIndex = Math.round(scrollLeft / pageWidth);
-      const activeTab = document.getElementById(`tab-${currentPageIndex}`);
-      if (activeTab && !activeTab.classList.contains('active')) {
-        document.querySelectorAll('.category-tab').forEach(btn => btn.classList.remove('active'));
-        activeTab.classList.add('active');
-        activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-      }
-    });
-
-    // 5. 数量プラスマイナス
-    function changeQty(qtyId, amount) {
-      const qtySpan = document.getElementById(qtyId);
-      let currentQty = parseInt(qtySpan.innerText);
-      currentQty += amount;
-      if (currentQty < 1) currentQty = 1;
-      qtySpan.innerText = currentQty;
+    function changeQty(id, amt) { const el = document.getElementById(id); let q = parseInt(el.innerText) + amt; el.innerText = q < 1 ? 1 : q; }
+    function addToCart(id, name, price, qtyId) {
+      const q = parseInt(document.getElementById(qtyId).innerText);
+      const ex = cart.find(i => i.menuId === id);
+      ex ? ex.quantity += q : cart.push({ menuId: id, name, price, quantity: q });
+      document.getElementById('cart-count').innerText = cart.reduce((sum, i) => sum + i.quantity, 0);
+      document.getElementById('checkout-btn').disabled = false;
     }
 
-    // 6. 商品をカートに入れる処理
-    function addToCart(menuId, name, price, qtyId) {
-      const qtySpan = document.getElementById(qtyId);
-      const quantity = parseInt(qtySpan.innerText);
-
-      const existingItem = cart.find(item => item.menuId === menuId);
-      if (existingItem) {
-        existingItem.quantity += quantity;
-      } else {
-        cart.push({ menuId: menuId, name: name, price: price, quantity: quantity });
-      }
-
-      qtySpan.innerText = "1";
-      updateCartBar();
-    }
-
-    // 7. カートバーの表示更新
-    function updateCartBar() {
-      let totalCount = 0;
-      cart.forEach(item => {
-        totalCount += item.quantity;
-      });
-
-      document.getElementById('cart-count').innerText = totalCount;
-
-      const checkoutBtn = document.getElementById('checkout-btn');
-      if (cart.length > 0) {
-        checkoutBtn.disabled = false;
-      } else {
-        checkoutBtn.disabled = true;
-      }
-    }
-
-    // 8. まとめてGASに送信する処理（注文の確定）
-    function submitOrder() {
-      if (tableId === '未設定') {
-        alert('卓番号が設定されていません。');
-        return;
-      }
-
-      let confirmText = "以下の内容で注文を確定しますか？\n\n";
-      cart.forEach(item => {
-        confirmText += `・${item.name} × ${item.quantity}\n`;
-      });
-
-      if (!confirm(confirmText)) return;
-
-      const promises = cart.map(item => {
-        const params = new URLSearchParams();
-        params.append('tableId', tableId);
-        params.append('menuId', item.menuId);
-        params.append('quantity', item.quantity);
-
-        return fetch(GAS_URL, {
-          method: 'POST',
-          body: params,
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-        }).then(response => response.json());
-      });
-
-      Promise.all(promises)
-        .then(results => {
-          alert('すべての注文を送信しました！厨房へ伝票が飛びます。');
-          cart = [];
-          updateCartBar();
-        })
-        .catch(error => {
-          console.error('送信エラー:', error);
-          alert('一部、またはすべての注文送信に失敗しました。もう一度お試しください。');
-        });
+    // ★ 順番待ち送信に変更
+    async function submitOrder() {
+      if (!confirm("注文を確定しますか？")) return;
+      document.getElementById('checkout-btn').disabled = true;
+      try {
+        for (const item of cart) {
+          const params = new URLSearchParams();
+          params.append('tableId', tableId); params.append('menuId', item.menuId); params.append('quantity', item.quantity);
+          await fetch(GAS_URL, { method: 'POST', body: params, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+        }
+        alert('注文完了しました！');
+        cart = []; document.getElementById('cart-count').innerText = '0';
+      } catch (e) { alert('送信エラーが発生しました。'); }
+      document.getElementById('checkout-btn').disabled = false;
     }
 
     fetchMenus();
