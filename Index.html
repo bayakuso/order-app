@@ -78,20 +78,53 @@
       padding: 16px;
     }
 
+    /* メニューグリッド（画像が入るので縦を少しゆったりに調整） */
     .menu-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 12px;
-      margin-bottom: 100px; /* カートバーに被らないように余白を広く */
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 14px;
+      margin-bottom: 100px;
     }
 
+    /* メニューカード全体の調整 */
     .menu-card {
       background: white;
       border-radius: 12px;
-      padding: 12px;
+      overflow: hidden; /* 画像の角をカードの丸みに合わせる */
       box-shadow: 0 4px 6px rgba(0,0,0,0.04);
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* ★新設：メニュー画像用のスタイル */
+    .menu-img-wrapper {
+      width: 100%;
+      height: 110px;
+      background-color: #eaeaea;
+      position: relative;
+    }
+    .menu-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* 画像の比率を崩さずに綺麗に収める */
+    }
+    /* 画像が無いとき用のダミー表示 */
+    .no-img-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #999;
+      font-size: 0.8rem;
+    }
+
+    /* カード内のテキスト部分の余白調整 */
+    .menu-card-body {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
       justify-content: space-between;
     }
 
@@ -189,7 +222,7 @@
   <div class="cart-bar">
     <div class="cart-info">
       <div>選択中の商品: <span id="cart-count" style="font-weight:bold; font-size: 1.1rem; color: #ff9800;">0</span> 点</div>
-      </div>
+    </div>
     <button id="checkout-btn" class="checkout-btn" onclick="submitOrder()" disabled>注文を確定する</button>
   </div>
 
@@ -246,7 +279,7 @@
       });
     }
 
-    // 3. 全カテゴリーのページを横一列に生成
+    // 3. 全カテゴリーのページを横一列に生成（画像表示対応！）
     function renderSwipePages(categories) {
       const swipeView = document.getElementById('swipe-view');
       swipeView.innerHTML = ''; 
@@ -266,17 +299,28 @@
           card.className = 'menu-card';
           const qtyId = `qty-${pageIndex}-${item.menu_id}`;
           
+          // 画像が設定されているか判定し、無ければ文字を出す
+          const imgHtml = item.image 
+            ? `<img src="${item.image}" class="menu-img" alt="${item.name}">` 
+            : `<span class="no-img-text">No Image</span>`;
+          
           card.innerHTML = `
-            <div>
-              <p class="menu-name">${item.name}</p>
-              <p class="menu-price">${Number(item.price).toLocaleString()}円</p>
+            <div class="menu-img-wrapper">
+              ${imgHtml}
             </div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 12px;">
-              <button type="button" class="qty-btn" onclick="changeQty('${qtyId}', -1)">-</button>
-              <span id="${qtyId}" style="font-size: 1.2rem; font-weight: bold; min-width: 20px; text-align: center;">1</span>
-              <button type="button" class="qty-btn" onclick="changeQty('${qtyId}', 1)">+</button>
+            
+            <div class="menu-card-body">
+              <div>
+                <p class="menu-name">${item.name}</p>
+                <p class="menu-price">${Number(item.price).toLocaleString()}円</p>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 12px;">
+                <button type="button" class="qty-btn" onclick="changeQty('${qtyId}', -1)">-</button>
+                <span id="${qtyId}" style="font-size: 1.2rem; font-weight: bold; min-width: 20px; text-align: center;">1</span>
+                <button type="button" class="qty-btn" onclick="changeQty('${qtyId}', 1)">+</button>
+              </div>
+              <button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${item.name}', ${item.price}, '${qtyId}')">カートへ追加</button>
             </div>
-            <button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${item.name}', ${item.price}, '${qtyId}')">カートへ追加</button>
           `;
           menuGrid.appendChild(card);
         });
@@ -325,18 +369,14 @@
       updateCartBar();
     }
 
-    // 7. カートバーの表示更新（金額処理によるエラーを防ぐため非表示用に対応）
+    // 7. カートバーの表示更新
     function updateCartBar() {
       let totalCount = 0;
-      // let totalPrice = 0; // 金額非表示のためコメントアウト
-
       cart.forEach(item => {
         totalCount += item.quantity;
-        // totalPrice += item.price * item.quantity; // 金額非表示のためコメントアウト
       });
 
       document.getElementById('cart-count').innerText = totalCount;
-      // document.getElementById('cart-total').innerText = totalPrice.toLocaleString(); // エラー原因の行をコメントアウト
 
       const checkoutBtn = document.getElementById('checkout-btn');
       if (cart.length > 0) {
