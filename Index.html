@@ -100,7 +100,7 @@
       <div class="modal-title">ご来店人数を入力してください</div>
       <div class="modal-counter">
         <button class="modal-btn" onclick="changeModalQty(-1)">-</button>
-        <span id="modal-count" class="modal-count-display">2</span>
+        <span id="modal-count" class="modal-count-display">1</span>
         <button class="modal-btn" onclick="changeModalQty(1)">+</button>
       </div>
       <button class="modal-submit-btn" onclick="submitModalQty()">確定してメニューへ</button>
@@ -110,7 +110,6 @@
   <div id="order-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <div class="modal-title" style="margin-bottom: 10px;">注文を確定しますか？</div>
-      <p style="color: #666; font-size: 0.9rem; margin-bottom: 24px;">カートに入っている商品を厨房へ送信します。</p>
       <div class="modal-btn-group">
         <button class="modal-cancel-btn" onclick="closeOrderModal()">戻る</button>
         <button class="modal-confirm-btn" onclick="executeOrderSubmit()">注文する</button>
