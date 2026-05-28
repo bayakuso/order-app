@@ -69,7 +69,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* ーーー 追加：注文完了メッセージ用の装飾 ーーー */
+    /* 注文完了メッセージ用の装飾 */
     .success-icon {
       font-size: 3rem; color: #4caf50; margin-bottom: 10px; display: block;
     }
@@ -154,7 +154,9 @@
     let allMenus = [], categoryList = [], cart = [];
     let isTabClicking = false;
     let clickTimeout;
-    let tempCustomerCount = 2;
+    
+    // 🛠️ 変更：JavaScript側の初期値データも完全に「1」に同期させました
+    let tempCustomerCount = 1;
 
     function changeModalQty(amt) {
       tempCustomerCount += amt;
@@ -187,7 +189,6 @@
       document.getElementById('order-modal').style.display = 'none';
     }
 
-    // ーーー 追加：完了モーダルの開閉 ーーー
     function openSuccessModal() {
       document.getElementById('success-modal').style.display = 'flex';
     }
@@ -213,7 +214,6 @@
         
         const result = await response.json();
         if (result.status === 'success') {
-            // 変更：無骨なalertを撤去し、カスタム完了モーダルを起動
             openSuccessModal();
             cart = []; 
             document.getElementById('cart-count').innerText = '0';
@@ -314,7 +314,6 @@
           targetTab.classList.add('active');
           
           const tabContainer = document.getElementById('tab-container');
-          // ーーー 修正：バグの原因になっていた三項演算子のタイポを綺麗に修正 ーーー
           tabContainer.scrollLeft = targetTab.offsetLeft - (tabContainer.clientWidth / 2) + (targetTab.clientWidth / 2);
         }
       });
