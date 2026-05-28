@@ -9,11 +9,11 @@
     body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; color: #333; overflow-x: hidden; }
     h1 { text-align: center; font-size: 1.3rem; margin: 15px 0 5px 0; }
     .tab-wrapper { position: sticky; top: 0; background-color: #f8f9fa; padding: 10px 16px; z-index: 10; border-bottom: 1px solid #e0e0e0; }
-    .tab-container { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; }
+    .tab-container { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .tab-container::-webkit-scrollbar { display: none; }
-    .category-tab { padding: 8px 18px; background-color: #fff; border: 1px solid #e0e0e0; border-radius: 25px; cursor: pointer; white-space: nowrap; font-weight: bold; font-size: 0.9rem; color: #666; }
+    .category-tab { padding: 8px 18px; background-color: #fff; border: 1px solid #e0e0e0; border-radius: 25px; cursor: pointer; white-space: nowrap; font-weight: bold; font-size: 0.9rem; color: #666; -webkit-tap-highlight-color: transparent; }
     .category-tab.active { background-color: #ff9800; color: white; border-color: #ff9800; }
-    .swipe-view-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; }
+    .swipe-view-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     .swipe-view-container::-webkit-scrollbar { display: none; }
     .category-page { min-width: 100vw; box-sizing: border-box; scroll-snap-align: start; padding: 16px; }
     .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-bottom: 100px; }
@@ -42,47 +42,62 @@
   </div>
 
   <script>
+    // 【重要】動いている正しいGASのURLに差し替えてください
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzvd7how1B-d5vKnCtPKSxqSpwyx-pZsHwOv6tm1YFHOt-HTuhXnaMrnoTJ6Wrx75nv9w/exec";
+    
     const urlParams = new URLSearchParams(window.location.search);
     const tableId = urlParams.get('table') || '未設定';
     document.getElementById('display-table-id').innerText = tableId;
 
     let allMenus = [], categoryList = [], cart = [];
-    let isTabClicking = false; // タブクリック時の自動スクロール中にイベントの衝突を防ぐフラグ
+    let isTabClicking = false;
+    let clickTimeout;
 
     function fetchMenus() {
       fetch(GAS_URL)
         .then(res => res.json())
         .then(data => { 
           allMenus = data; 
-          categoryList = [...new Set(data.map(i => i.category || "その他"))]; 
+          categoryList = [];
+          for(let i=0; i<data.length; i++) {
+            let cat = data[i].category || "その他";
+            if(categoryList.indexOf(cat) === -1) categoryList.push(cat);
+          }
           renderTabs(categoryList); 
           renderSwipePages(categoryList); 
-          initSwipeListener(); // スワイプ監視の初期化
+          initSwipeListener();
         })
-        .catch(err => { console.error(err); document.getElementById('swipe-view').innerHTML = '<p>読み込み失敗</p>'; });
+        .catch(err => { 
+          console.error(err); 
+          document.getElementById('swipe-view').innerHTML = '<p style="text-align:center; color:red; padding:20px;">読み込み失敗。URLやGASの設定を確認してください。</p>'; 
+        });
     }
 
     function renderTabs(cats) {
       const container = document.getElementById('tab-container');
+      container.innerHTML = '';
       cats.forEach((cat, i) => {
         const btn = document.createElement('button');
-        btn.className = `category-tab ${i === 0 ? 'active' : ''}`;
-        btn.id = `tab-btn-${i}`;
+        btn.className = 'category-tab' + (i === 0 ? ' active' : '');
+        btn.id = 'tab-btn-' + i;
         btn.innerText = cat;
         btn.onclick = () => {
-          isTabClicking = true; // スワイプイベントを一時的に無視する
+          isTabClicking = true;
+          clearTimeout(clickTimeout);
+          
           document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           
-          // タブ自体を画面中央付近へスクロール
-          btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          // 古いスマホでも動くスクロール位置調整
+          const tabContainer = document.getElementById('tab-container');
+          tabContainer.scrollLeft = btn.offsetLeft - (tabContainer.clientWidth / 2) + (btn.clientWidth / 2);
           
-          // 該当ページへスクロール
-          document.getElementById(`page-${i}`).scrollIntoView({ behavior: 'smooth' });
+          const targetPage = document.getElementById('page-' + i);
+          if(targetPage) {
+            document.getElementById('swipe-view').scrollLeft = targetPage.offsetLeft;
+          }
           
-          // スクロール完了後にフラグを解除（少し猶予を持たせる）
-          setTimeout(() => { isTabClicking = false; }, 600);
+          clickTimeout = setTimeout(() => { isTabClicking = false; }, 500);
         };
         container.appendChild(btn);
       });
@@ -90,22 +105,87 @@
 
     function renderSwipePages(cats) {
       const swipeView = document.getElementById('swipe-view');
-      swipeView.innerHTML = ''; // 「読み込み中...」を消去
+      swipeView.innerHTML = '';
       cats.forEach((cat, idx) => {
         const page = document.createElement('div');
-        page.className = 'category-page'; page.id = `page-${idx}`;
+        page.className = 'category-page'; page.id = 'page-' + idx;
         const grid = document.createElement('div'); grid.className = 'menu-grid';
-        allMenus.filter(i => (i.category || "その他") === cat).forEach(item => {
+        
+        const filtered = allMenus.filter(i => (i.category || "その他") === cat);
+        filtered.forEach(item => {
           const card = document.createElement('div'); card.className = 'menu-card';
-          const qtyId = `qty-${idx}-${item.menu_id}`;
-          card.innerHTML = `<div class="menu-img-wrapper">${item.image ? `<img src="${item.image}" class="menu-img">` : '<span class="no-img-text">No Image</span>'}</div>` +
-            `<div class="menu-card-body"><p class="menu-name">${item.name}</p><p class="menu-price">${Number(item.price).toLocaleString()}円</p>` +
-            `<div style="display:flex; justify-content:center; gap:10px;"><button class="qty-btn" onclick="changeQty('${qtyId}', -1)">-</button><span id="${qtyId}">1</span><button class="qty-btn" onclick="changeQty('${qtyId}', 1)">+</button></div>` +
-            `<button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${item.name}', ${item.price}, '${qtyId}')">カートへ追加</button></div>`;
+          const qtyId = 'qty-' + idx + '-' + item.menu_id;
+          card.innerHTML = '<div class="menu-img-wrapper">' + (item.image ? '<img src="' + item.image + '" class="menu-img">' : '<span class="no-img-text">No Image</span>') + '</div>' +
+            '<div class="menu-card-body"><p class="menu-name">' + item.name + '</p><p class="menu-price">' + Number(item.price).toLocaleString() + '円</p>' +
+            '<div style="display:flex; justify-content:center; gap:10px;"><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', -1)">-</button><span id="' + qtyId + '">1</span><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', 1)">+</button></div>' +
+            '<button class="add-cart-btn" onclick="addToCart(\'' + item.menu_id + '\', \'' + item.name + '\', ' + item.price + ', \'' + qtyId + '\')">カートへ追加</button></div>';
           grid.appendChild(card);
         });
         page.appendChild(grid); swipeView.appendChild(page);
       });
     }
 
-    // ★ スワイプを検知して上のタブの色を追従させる
+    function initSwipeListener() {
+      const swipeView = document.getElementById('swipe-view');
+      swipeView.addEventListener('scroll', () => {
+        if (isTabClicking) return;
+
+        const width = swipeView.clientWidth;
+        const scrollLeft = swipeView.scrollLeft;
+        const currentIdx = Math.round(scrollLeft / width);
+        
+        const targetTab = document.getElementById('tab-btn-' + currentIdx);
+        if (targetTab && !targetTab.classList.contains('active')) {
+          document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active'));
+          targetTab.classList.add('active');
+          
+          const tabContainer = document.getElementById('tab-container');
+          tabContainer.scrollLeft = targetTab.offsetLeft - (tabContainer.clientWidth / 2) + (targetTab.clientWidth / 2);
+        }
+      });
+    }
+
+    function changeQty(id, amt) { const el = document.getElementById(id); let q = parseInt(el.innerText) + amt; el.innerText = q < 1 ? 1 : q; }
+    
+    function addToCart(id, name, price, qtyId) {
+      const q = parseInt(document.getElementById(qtyId).innerText);
+      const ex = cart.find(i => i.menuId === id);
+      ex ? ex.quantity += q : cart.push({ menuId: id, name: name, price: price, quantity: q });
+      document.getElementById('cart-count').innerText = cart.reduce((sum, i) => sum + i.quantity, 0);
+      document.getElementById('checkout-btn').disabled = false;
+    }
+
+    async function submitOrder() {
+      if (!confirm("注文を確定しますか？")) return;
+      document.getElementById('checkout-btn').disabled = true;
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'bulk_order');
+        params.append('tableId', tableId);
+        params.append('cart', JSON.stringify(cart));
+
+        const response = await fetch(GAS_URL, { 
+          method: 'POST', 
+          body: params, 
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' } 
+        });
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert('注文完了しました！');
+            cart = []; document.getElementById('cart-count').innerText = '0';
+            document.getElementById('checkout-btn').disabled = true;
+        } else {
+            throw new Error(result.message);
+        }
+      } catch (e) { 
+        alert('送信エラーが発生しました。もう一度お試しください。');
+        console.error(e);
+      }
+      document.getElementById('checkout-btn').disabled = false;
+    }
+
+    fetchMenus();
+  </script>
+</body>
+</html>
