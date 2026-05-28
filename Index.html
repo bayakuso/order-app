@@ -24,7 +24,7 @@
       color: #ffb74d;
     }
 
-    /* ーーー 追加：人数選択モーダル（ポップアップ窓） ーーー */
+    /* ーーー モーダル（共通デザイン） ーーー */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background-color: rgba(0,0,0,0.6);
@@ -46,8 +46,24 @@
       -webkit-tap-highlight-color: transparent;
     }
     .modal-count-display { font-size: 2rem; font-weight: bold; width: 40px; color: #ff9800; }
+    
+    /* ボタンのレイアウト用 */
     .modal-submit-btn {
       width: 100%; background-color: #ff9800; color: white; border: none;
+      padding: 12px; border-radius: 25px; font-weight: bold; font-size: 1rem;
+      cursor: pointer; box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .modal-btn-group {
+      display: flex; gap: 12px; margin-top: 20px;
+    }
+    .modal-cancel-btn {
+      flex: 1; background-color: #eceff1; color: #546e7a; border: none;
+      padding: 12px; border-radius: 25px; font-weight: bold; font-size: 1rem;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .modal-confirm-btn {
+      flex: 1; background-color: #ff9800; color: white; border: none;
       padding: 12px; border-radius: 25px; font-weight: bold; font-size: 1rem;
       cursor: pointer; box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
       -webkit-tap-highlight-color: transparent;
@@ -84,10 +100,21 @@
       <div class="modal-title">ご来店人数を入力してください</div>
       <div class="modal-counter">
         <button class="modal-btn" onclick="changeModalQty(-1)">-</button>
-        <span id="modal-count" class="modal-count-display">1</span>
+        <span id="modal-count" class="modal-count-display">2</span>
         <button class="modal-btn" onclick="changeModalQty(1)">+</button>
       </div>
       <button class="modal-submit-btn" onclick="submitModalQty()">確定してメニューへ</button>
+    </div>
+  </div>
+
+  <div id="order-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-title" style="margin-bottom: 10px;">注文を確定しますか？</div>
+      <p style="color: #666; font-size: 0.9rem; margin-bottom: 24px;">カートに入っている商品を厨房へ送信します。</p>
+      <div class="modal-btn-group">
+        <button class="modal-cancel-btn" onclick="closeOrderModal()">戻る</button>
+        <button class="modal-confirm-btn" onclick="executeOrderSubmit()">注文する</button>
+      </div>
     </div>
   </div>
 
@@ -101,7 +128,7 @@
   <div id="swipe-view" class="swipe-view-container"><p style="text-align: center; color: #999; width: 100vw; padding: 20px;">メニューを読み込み中...</p></div>
   <div class="cart-bar">
     <div class="cart-info"><div>選択中の商品: <span id="cart-count" style="font-weight:bold; font-size: 1.1rem; color: #ff9800;">0</span> 点</div></div>
-    <button id="checkout-btn" class="checkout-btn" onclick="submitOrder()" disabled>注文を確定する</button>
+    <button id="checkout-btn" class="checkout-btn" onclick="openOrderModal()" disabled>注文を確定する</button>
   </div>
 
   <script>
@@ -114,31 +141,72 @@
     let allMenus = [], categoryList = [], cart = [];
     let isTabClicking = false;
     let clickTimeout;
-    let tempCustomerCount = 2; // 初期のポップアップ内表示人数
+    let tempCustomerCount = 2;
 
-    // ーーー 追加：モーダル内のプラスマイナス処理 ーーー
     function changeModalQty(amt) {
       tempCustomerCount += amt;
-      if (tempCustomerCount < 1) tempCustomerCount = 1; // 1人未満にはさせない
+      if (tempCustomerCount < 1) tempCustomerCount = 1;
       document.getElementById('modal-count').innerText = tempCustomerCount;
     }
 
-    // ーーー 追加：人数確定時の処理 ーーー
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById('modal-count').innerText = tempCustomerCount;
+    });
+
     function submitModalQty() {
-      // 確定した人数を上部バーにセット
       document.getElementById('display-customer-count').innerText = tempCustomerCount;
 
-      // 現在時刻を取得して「HH:mm」形式でセット
       const now = new Date();
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
-      document.getElementById('display-start-time').innerText = `${hours}:${minutes}`;
+      document.getElementById('display-start-time').innerText = hours + ':' + minutes;
 
-      // モーダルを非表示にする
       document.getElementById('customer-modal').style.display = 'none';
 
-      // メニューの読み込みを開始
       fetchMenus();
+    }
+
+    // ーーー 追加：注文モーダルの制御 ーーー
+    function openOrderModal() {
+      document.getElementById('order-modal').style.display = 'flex';
+    }
+
+    function closeOrderModal() {
+      document.getElementById('order-modal').style.display = 'none';
+    }
+
+    // ーーー 変更：実際の送信処理（confirmを撤去） ーーー
+    async function executeOrderSubmit() {
+      // モーダルを閉じてボタンを無効化
+      closeOrderModal();
+      document.getElementById('checkout-btn').disabled = true;
+      
+      try {
+        const params = new URLSearchParams();
+        params.append('action', 'bulk_order');
+        params.append('tableId', tableId);
+        params.append('cart', JSON.stringify(cart));
+
+        const response = await fetch(GAS_URL, { 
+          method: 'POST', 
+          body: params, 
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' } 
+        });
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert('注文完了しました！'); // ※ここも追々綺麗にできます
+            cart = []; 
+            document.getElementById('cart-count').innerText = '0';
+            document.getElementById('checkout-btn').disabled = true;
+        } else {
+            throw new Error(result.message);
+        }
+      } catch (e) { 
+        alert('送信エラーが発生しました。もう一度お試しください。');
+        console.error(e);
+      }
+      document.getElementById('checkout-btn').disabled = false;
     }
 
     function fetchMenus() {
@@ -227,7 +295,7 @@
           targetTab.classList.add('active');
           
           const tabContainer = document.getElementById('tab-container');
-          tabContainer.scrollLeft = targetTab.offsetLeft - (tabContainer.clientWidth / 2) + (targetTab.clientWidth / 2);
+          tabContainer.scrollLeft = targetTab.offsetLeft - (tabContainer.clientWidth / 2) + (targetTab.semibold ? targetTab.clientWidth / 2 : targetTab.clientWidth / 2);
         }
       });
     }
@@ -242,37 +310,7 @@
       document.getElementById('checkout-btn').disabled = false;
     }
 
-    async function submitOrder() {
-      if (!confirm("注文を確定しますか？")) return;
-      document.getElementById('checkout-btn').disabled = true;
-      try {
-        const params = new URLSearchParams();
-        params.append('action', 'bulk_order');
-        params.append('tableId', tableId);
-        params.append('cart', JSON.stringify(cart));
-
-        const response = await fetch(GAS_URL, { 
-          method: 'POST', 
-          body: params, 
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' } 
-        });
-        
-        const result = await response.json();
-        if (result.status === 'success') {
-            alert('注文完了しました！');
-            cart = []; document.getElementById('cart-count').innerText = '0';
-            document.getElementById('checkout-btn').disabled = true;
-        } else {
-            throw new Error(result.message);
-        }
-      } catch (e) { 
-        alert('送信エラーが発生しました。もう一度お試しください。');
-        console.error(e);
-      }
-      document.getElementById('checkout-btn').disabled = false;
-    }
-
-    // 初回起動は自動的にモーダル表示状態からスタート（スクリプト末尾の自動fetchをコメントアウト）
+    // 元のsubmitOrder関数は撤去し、新設した二つの関数に分割・統合しました
   </script>
 </body>
 </html>
