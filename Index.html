@@ -8,6 +8,22 @@
     /* 全体のデザイン調整 */
     body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; color: #333; overflow-x: hidden; }
     h1 { text-align: center; font-size: 1.3rem; margin: 15px 0 5px 0; }
+    
+    /* ーーー 追加：入店時間・人数の表示バー ーーー */
+    .status-bar {
+      background-color: #37474f;
+      color: white;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+    }
+    .status-bar .time-highlight {
+      color: #ffb74d;
+    }
+
     .tab-wrapper { position: sticky; top: 0; background-color: #f8f9fa; padding: 10px 16px; z-index: 10; border-bottom: 1px solid #e0e0e0; }
     .tab-container { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .tab-container::-webkit-scrollbar { display: none; }
@@ -33,6 +49,11 @@
   </style>
 </head>
 <body>
+  <div class="status-bar">
+    <div>👥 人数: <span id="display-customer-count">-</span> 名様</div>
+    <div>🍻 乾杯: <span id="display-start-time" class="time-highlight">--:--</span></div>
+  </div>
+
   <h1>ご注文（卓番号: <span id="display-table-id">-</span>）</h1>
   <div class="tab-wrapper"><div id="tab-container" class="tab-container"></div></div>
   <div id="swipe-view" class="swipe-view-container"><p style="text-align: center; color: #999; width: 100vw; padding: 20px;">メニューを読み込み中...</p></div>
@@ -42,7 +63,6 @@
   </div>
 
   <script>
-    // 【重要】動いている正しいGASのURLに差し替えてください
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzvd7how1B-d5vKnCtPKSxqSpwyx-pZsHwOv6tm1YFHOt-HTuhXnaMrnoTJ6Wrx75nv9w/exec";
     
     const urlParams = new URLSearchParams(window.location.search);
@@ -52,6 +72,22 @@
     let allMenus = [], categoryList = [], cart = [];
     let isTabClicking = false;
     let clickTimeout;
+
+    // ーーー 追加：人数入力と時間記録の処理 ーーー
+    function initSession() {
+      let count = prompt("ご来店人数を入力してください", "2");
+      // キャンセルされたり空欄だった場合のガード
+      if (count === null || count.trim() === "") {
+        count = "1";
+      }
+      document.getElementById('display-customer-count').innerText = count;
+
+      // 現在時刻を取得して「HH:mm」形式にする
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('display-start-time').innerText = `${hours}:${minutes}`;
+    }
 
     function fetchMenus() {
       fetch(GAS_URL)
@@ -88,7 +124,6 @@
           document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           
-          // 古いスマホでも動くスクロール位置調整
           const tabContainer = document.getElementById('tab-container');
           tabContainer.scrollLeft = btn.offsetLeft - (tabContainer.clientWidth / 2) + (btn.clientWidth / 2);
           
@@ -185,6 +220,8 @@
       document.getElementById('checkout-btn').disabled = false;
     }
 
+    // 最初にセッション（人数・時間）を初期化し、そのあとメニューを読み込む
+    initSession();
     fetchMenus();
   </script>
 </body>
