@@ -155,7 +155,6 @@
     let isTabClicking = false;
     let clickTimeout;
     
-    // 🛠️ 変更：JavaScript側の初期値データも完全に「1」に同期させました
     let tempCustomerCount = 1;
 
     function changeModalQty(amt) {
@@ -193,6 +192,7 @@
       document.getElementById('success-modal').style.display = 'flex';
     }
     function closeSuccessModal() {
+      document.getElementById('success-modal').style.none = 'none';
       document.getElementById('success-modal').style.display = 'none';
     }
 
@@ -289,9 +289,13 @@
         filtered.forEach(item => {
           const card = document.createElement('div'); card.className = 'menu-card';
           const qtyId = 'qty-' + idx + '-' + item.menu_id;
-          card.innerHTML = '<div class="menu-img-wrapper">' + (item.image ? '<img src="' + item.image + '" class="menu-img">' : '<span class="no-img-text">No Image</span>') + '</div>' +
+          
+          // 🛠️ 変更箇所：
+          // 1. imgタグに loading="lazy" を追加して画像を軽量化
+          // 2. 数量表示部分に align-items:center、font-weight:bold、width を追加して上下中央に完璧に整列
+          card.innerHTML = '<div class="menu-img-wrapper">' + (item.image ? '<img src="' + item.image + '" class="menu-img" loading="lazy">' : '<span class="no-img-text">No Image</span>') + '</div>' +
             '<div class="menu-card-body"><p class="menu-name">' + item.name + '</p><p class="menu-price">' + Number(item.price).toLocaleString() + '円</p>' +
-            '<div style="display:flex; justify-content:center; gap:10px;"><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', -1)">-</button><span id="' + qtyId + '">1</span><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', 1)">+</button></div>' +
+            '<div style="display:flex; justify-content:center; align-items:center; gap:10px;"><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', -1)">-</button><span id="' + qtyId + '" style="font-weight:bold; width:24px; text-align:center;">1</span><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', 1)">+</button></div>' +
             '<button class="add-cart-btn" onclick="addToCart(\'' + item.menu_id + '\', \'' + item.name + '\', ' + item.price + ', \'' + qtyId + '\')">カートへ追加</button></div>';
           grid.appendChild(card);
         });
