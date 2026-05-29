@@ -370,7 +370,6 @@
       document.getElementById('checkout-btn').disabled = (totalQty === 0);
     }
 
-    // 🛠️ 修正：画像なしメニューでも安全に開けるように引数の渡し方を修正
     function openOptionModal(menuId, qtyId) {
       const item = allMenus.find(m => m.menu_id == menuId);
       if (!item) return;
@@ -471,11 +470,11 @@
           let formattedName = item.name.replace(/<br\s*\/?>/gi, '\n');
           let buttonHtml = '';
           
-          // 🛠️ 修正：画像URLなどの巨大データをボタン内に直接埋め込まず、シンプルなID指定で動くように安全化
+          // 🛠️ 修正：'${qtyId}' にシングルクォーテーションを付けて、正しい「文字列」として関数に渡るよう修正
           if (item.options && item.options.trim() !== '') {
             buttonHtml = `<button class="add-cart-btn has-option" onclick="openOptionModal('${item.menu_id}', '${qtyId}')">飲み方選択</button>`;
           } else {
-            buttonHtml = `<button class="add-cart-btn" onclick="addToCart('${item.menu_id}', ${qtyId})">追加</button>`;
+            buttonHtml = `<button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${qtyId}')">追加</button>`;
           }
           
           card.innerHTML = '<div class="menu-img-wrapper">' + (item.image ? '<img src="' + item.image + '" class="menu-img" loading="lazy">' : '<span class="no-img-text">画像なし</span>') + '</div>' +
@@ -513,7 +512,6 @@
 
     function changeQty(id, amt) { const el = document.getElementById(id); let q = parseInt(el.innerText) + amt; el.innerText = q < 1 ? 1 : q; }
     
-    // 🛠️ 修正：引数をメニューIDと数量の要素IDだけに絞り、データはマスター（allMenus）から直接安全に引く設計に変更
     function addToCart(id, qtyId) {
       const item = allMenus.find(m => m.menu_id == id);
       if (!item) return;
