@@ -21,10 +21,16 @@
       align-items: center;
       font-weight: bold;
     }
+    /* 🛠️ 追加：左側の情報（人数・時間）を並べる用のスタイル */
+    .status-left {
+      display: flex;
+      gap: 15px; /* 人数と時間の間のスキマ */
+      align-items: center;
+    }
     .status-bar .time-highlight {
       color: #ffb74d;
     }
-    /* 🛠️ 追加：スマホ連携ボタンのデザイン */
+    /* スマホ連携ボタンのデザイン */
     .qr-share-btn {
       background-color: #ff9800; color: white; border: none;
       padding: 4px 10px; border-radius: 4px; font-size: 0.75rem;
@@ -123,7 +129,7 @@
   <div id="qr-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <div class="modal-title" style="margin-bottom: 10px;">自分のスマホで注文</div>
-      <p style="color: #666; font-size: 0.85rem; margin-bottom: 15px;">QRコードを読み取ると、この卓のメニューを手元で開けます（人数・時間は自動同期されます）。</p>
+      <p style="color: #666; font-size: 0.85rem; margin-bottom: 15px;">QRコードを読み取ると、この卓のメニューを手元で開けます。</p>
       <div style="background: white; padding: 10px; display: inline-block; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
         <canvas id="qr-canvas"></canvas>
       </div>
@@ -151,10 +157,12 @@
   </div>
 
   <div class="status-bar">
-    <div>👥 人数: <span id="display-customer-count">-</span> 名様</div>
-    <div style="display: flex; align-items: center; gap: 10px;">
+    <div class="status-left">
+      <div>👥 人数: <span id="display-customer-count">-</span> 名様</div>
       <div>🍻 乾杯: <span id="display-start-time" class="time-highlight">--:--</span></div>
-      <button id="share-qr-nav-btn" class="qr-share-btn" onclick="openQrModal()" style="display: none;">📱 スマホ連携</button>
+    </div>
+    <div>
+      <button id="share-qr-nav-btn" class="qr-share-btn" onclick="openQrModal()" style="display: none;">📱 自分のスマホで注文</button>
     </div>
   </div>
 
@@ -173,7 +181,6 @@
     const tableId = urlParams.get('table') || '未設定';
     const isViewer = urlParams.get('viewer') === 'true'; 
     
-    // 🛠️ 追加：URLから引き継いだ人数と時間を取得
     const passedNum = urlParams.get('num');
     const passedTime = urlParams.get('time');
 
@@ -184,7 +191,7 @@
     let clickTimeout;
     
     let tempCustomerCount = 1;
-    let finalStartTime = '--:--'; // 🛠️ 共有用に時間を保持する変数
+    let finalStartTime = '--:--';
 
     function changeModalQty(amt) {
       tempCustomerCount += amt;
@@ -196,7 +203,6 @@
         document.getElementById('modal-count').innerText = tempCustomerCount;
         
         if (isViewer) {
-          // 🛠️ 変更：個人スマホ（viewer）の時は、URLのデータをそのままステータスバーに表示
           document.getElementById('customer-modal').style.display = 'none';
           document.getElementById('display-customer-count').innerText = passedNum || '-';
           document.getElementById('display-start-time').innerText = passedTime ? decodeURIComponent(passedTime) : '--:--';
@@ -216,21 +222,15 @@
 
       document.getElementById('customer-modal').style.display = 'none';
       
-      // 🛠️ 追加：据え置き端末側なら「スマホ連携」ボタンを表示する
       document.getElementById('share-qr-nav-btn').style.display = 'inline-block';
 
       fetchMenus();
     }
 
-    // 🛠️ 追加：QRコードモーダルの開閉と生成処理
     function openQrModal() {
-      // 現在の「ベースURL（末尾の?以降を除いたもの）」を取得
       const baseUrl = window.location.origin + window.location.pathname;
-      
-      // お客様のスマホに渡す情報を含んだURLを動的に組み立て
       const shareUrl = `${baseUrl}?table=${encodeURIComponent(tableId)}&viewer=true&num=${tempCustomerCount}&time=${encodeURIComponent(finalStartTime)}`;
       
-      // QRコードを生成してcanvasに描画
       new QRious({
         element: document.getElementById('qr-canvas'),
         value: shareUrl,
