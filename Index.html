@@ -96,10 +96,10 @@
       display: flex; 
       flex-direction: column; 
       position: relative; 
-      container-type: inline-size; /* 対策A：文字サイズ自動調整のためのコンテナ定義 */
+      container-type: inline-size; /* 文字サイズ自動調整のためのコンテナ定義 */
     }
     
-    /* 写真エリア（少しコンパクトに） */
+    /* 写真エリア */
     .menu-img-wrapper { width: 100%; height: 75px; background-color: #eae5da; position: relative; border-bottom: 1px dashed #c8bfae; }
     .menu-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(8%); }
     .no-img-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #baae9e; font-size: 0.75rem; font-family: sans-serif; }
@@ -112,7 +112,7 @@
       flex-grow: 1; 
     }
 
-    /* 🛠️ 変更・対策A：縦書きメニュー名エリア（右寄せ構造） */
+    /* 🛠️ 修正：縦書きメニュー名エリア */
     .vertical-text-area {
       writing-mode: vertical-rl;
       text-orientation: mixed;
@@ -122,19 +122,21 @@
       width: 100%;
       box-sizing: border-box;
       padding-right: 4px;
+      overflow: visible;
     }
+    
+    /* 🛠️ 修正：勝手な自動折り返しを禁止し、1行のまま綺麗に縮小させる */
     .menu-name { 
       font-weight: bold; 
-      /* 枠の幅に合わせて文字サイズを自動で最適化（1cqi〜24pxの間で可変） */
-      font-size: clamp(14px, 14cqi, 22px); 
+      font-size: clamp(13px, 14cqi, 22px); 
       line-height: 1.2;
       letter-spacing: 1px;
       color: #111;
-      white-space: pre-wrap; /* スプレッドシートの改行を正しく反映 */
+      white-space: pre; /* pre-wrapからpreに変更し、意図しない改行を完全にブロック */
       margin: 0;
     }
 
-    /* 🛠️ 変更：料金エリア（横書き・数量の上に左寄せ） */
+    /* 料金エリア（横書き・数量の上に左寄せ） */
     .price-area {
       width: 100%;
       text-align: left;
@@ -395,12 +397,12 @@
         page.className = 'category-page'; page.id = 'page-' + idx;
         const grid = document.createElement('div'); grid.className = 'menu-grid';
         
-        const filtered = allMenus.filter(i => (i.category || "その他") === cat);
+        const filtered = allMenus.filter(i => (i.category || "choose") === cat);
         filtered.forEach(item => {
           const card = document.createElement('div'); card.className = 'menu-card';
           const qtyId = 'qty-' + idx + '-' + item.menu_id;
           
-          // 🛠️ 変更：スプレッドシートの「<br>」タグや実際の改行コードを正しく処理する形に修正
+          // スプレッドシートの「<br>」や実際の改行コードを改行文字(\n)に統一
           let formattedName = item.name.replace(/<br\s*\/?>/gi, '\n');
 
           card.innerHTML = '<div class="menu-img-wrapper">' + (item.image ? '<img src="' + item.image + '" class="menu-img" loading="lazy">' : '<span class="no-img-text">画像なし</span>') + '</div>' +
@@ -443,7 +445,7 @@
           targetTab.classList.add('active');
           
           const tabContainer = document.getElementById('tab-container');
-          tabContainer.scrollLeft = targetTab.offsetLeft - (tabContainer.clientWidth / 2) + (targetTab.clientWidth / 2);
+          tabContainer.scrollLeft = targetTab.offsetLeft - (tabContainer.clientWidth / 2) + (targetTab.semibold / 2);
         }
       });
     }
