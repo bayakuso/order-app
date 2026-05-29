@@ -437,15 +437,25 @@
 
         const width = swipeView.clientWidth;
         const scrollLeft = swipeView.scrollLeft;
+        
+        // 現在どのページにいるかを正確に計算（四捨五入）
         const currentIdx = Math.round(scrollLeft / width);
         
         const targetTab = document.getElementById('tab-btn-' + currentIdx);
         if (targetTab && !targetTab.classList.contains('active')) {
+          // すべてのタブから一度 active クラスを消す
           document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active'));
+          // 現在のタブを光らせる
           targetTab.classList.add('active');
           
+          // 💡 ここが肝：選択されたカテゴリータブが画面の「真ん中」にくるように自動スクロール
           const tabContainer = document.getElementById('tab-container');
-          tabContainer.scrollLeft = targetTab.offsetLeft - (tabContainer.clientWidth / 2) + (targetTab.semibold / 2);
+          const targetLeft = targetTab.offsetLeft - (tabContainer.clientWidth / 2) + (targetTab.clientWidth / 2);
+          
+          tabContainer.scrollTo({
+            left: targetLeft,
+            behavior: 'smooth' /* スムーズにスルッと動かす */
+          });
         }
       });
     }
