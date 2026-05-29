@@ -6,11 +6,11 @@
   <title>客席モバイルオーダー</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <style>
-    /* 全体のデザイン調整：背景を少し落ち着いた和モダンな色に */
+    /* 全体のデザイン調整：背景を和モダンな生成り・砂色に */
     body { font-family: 'Hiragino Mincho ProN', 'MS Mincho', serif; margin: 0; padding: 0; background-color: #f4efe8; color: #222; overflow-x: hidden; }
     h1 { text-align: center; font-size: 1.3rem; margin: 15px 0 5px 0; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
     
-    /* 入店時間・人数の表示バー：黒から深い紺（前掛けの色）に */
+    /* 入店時間・人数の表示バー：深い紺（前掛けの色） */
     .status-bar {
       background-color: #1a252c;
       color: white;
@@ -27,7 +27,6 @@
       gap: 15px;
       align-items: center;
     }
-    /* アクセントカラーをオレンジから「赤提灯の朱赤」に */
     .status-bar .time-highlight {
       color: #ff5252;
     }
@@ -82,12 +81,12 @@
     .swipe-view-container::-webkit-scrollbar { display: none; }
     .category-page { min-width: 100vw; box-sizing: border-box; scroll-snap-align: start; padding: 16px; }
     
-    /* 🛠️ 変更：メニューグリッドの幅を縦長（短冊型）に最適化 */
+    /* メニューグリッド */
     .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 16px; margin-bottom: 100px; }
     
-    /* 🛠️ 変更：メニューカードを「短冊風」のデザインに一新 */
+    /* 短冊風メニューカード */
     .menu-card { 
-      background: #fcfaf2; /* 生なりの和紙風カラー */
+      background: #fcfaf2; 
       border-radius: 4px; 
       overflow: hidden; 
       box-shadow: 2px 2px 8px rgba(0,0,0,0.08); 
@@ -97,56 +96,67 @@
       display: flex; 
       flex-direction: column; 
       position: relative; 
+      container-type: inline-size; /* 対策A：文字サイズ自動調整のためのコンテナ定義 */
     }
-    /* 写真部分は上にコンパクトに配置 */
-    .menu-img-wrapper { width: 100%; height: 80px; background-color: #eae5da; position: relative; border-bottom: 1px dashed #c8bfae; }
-    .menu-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(10%); }
-    .no-img-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #999; font-size: 0.75rem; font-family: sans-serif; }
     
-    /* 🛠️ 変更：ここが肝！文字を「縦書き」にする領域 */
+    /* 写真エリア（少しコンパクトに） */
+    .menu-img-wrapper { width: 100%; height: 75px; background-color: #eae5da; position: relative; border-bottom: 1px dashed #c8bfae; }
+    .menu-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(8%); }
+    .no-img-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #baae9e; font-size: 0.75rem; font-family: sans-serif; }
+    
     .menu-card-body { 
-      padding: 12px 8px; 
+      padding: 10px 8px 8px 8px; 
       display: flex; 
       flex-direction: column; 
-      align-items: center; 
       justify-content: space-between; 
       flex-grow: 1; 
     }
+
+    /* 🛠️ 変更・対策A：縦書きメニュー名エリア（右寄せ構造） */
     .vertical-text-area {
-      writing-mode: vertical-rl; /* 縦書き（右から左へ） */
+      writing-mode: vertical-rl;
       text-orientation: mixed;
-      height: 130px;             /* 縦書きエリアの高さ */
+      height: 120px;
       display: flex;
-      justify-content: flex-start;
-      gap: 10px;
+      justify-content: flex-start; /* 右側から文字を開始 */
       width: 100%;
-      padding-left: 6px;
+      box-sizing: border-box;
+      padding-right: 4px;
     }
     .menu-name { 
       font-weight: bold; 
-      font-size: 1.1rem; 
-      line-height: 1.3;
-      letter-spacing: 2px;
+      /* 枠の幅に合わせて文字サイズを自動で最適化（1cqi〜24pxの間で可変） */
+      font-size: clamp(14px, 14cqi, 22px); 
+      line-height: 1.2;
+      letter-spacing: 1px;
       color: #111;
-    }
-    .menu-price { 
-      color: #333; 
-      font-weight: bold; 
-      font-size: 0.95rem; 
-      border-right: 1px dashed #ff5252; /* 値段の横にさりげない赤の点線 */
-      padding-right: 4px;
-      margin-right: 4px;
+      white-space: pre-wrap; /* スプレッドシートの改行を正しく反映 */
+      margin: 0;
     }
 
-    /* 数量ボタンとカートボタン（ここは押しやすさ重視で横書きのまま） */
-    .qty-area { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 10px 0; font-family: sans-serif; }
-    .qty-btn { width: 28px; height: 28px; border-radius: 4px; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .add-cart-btn { width: 100%; background-color: #fff; border: 1px solid #d32f2f; color: #d32f2f; padding: 6px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; cursor: pointer; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
+    /* 🛠️ 変更：料金エリア（横書き・数量の上に左寄せ） */
+    .price-area {
+      width: 100%;
+      text-align: left;
+      padding-left: 4px;
+      margin-top: 8px;
+    }
+    .menu-price { 
+      color: #1a252c; 
+      font-weight: bold; 
+      font-size: 1rem; 
+      font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+    }
+
+    /* 操作エリア */
+    .qty-area { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 6px 0; font-family: sans-serif; }
+    .qty-btn { width: 28px; height: 28px; border-radius: 4px; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+    .add-cart-btn { width: 100%; background-color: #fff; border: 1px solid #d32f2f; color: #d32f2f; padding: 6px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; cursor: pointer; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; -webkit-tap-highlight-color: transparent; }
     
     /* 下部カートバー */
     .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #fff; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); padding: 12px 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
     .cart-info { font-size: 0.9rem; color: #555; }
-    .checkout-btn { background-color: #d32f2f; color: white; border: none; padding: 12px 24px; border-radius: 4px; font-weight: bold; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 8px rgba(211, 47, 47, 0.3); }
+    .checkout-btn { background-color: #d32f2f; color: white; border: none; padding: 12px 24px; border-radius: 4px; font-weight: bold; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 8px rgba(211, 47, 47, 0.3); -webkit-tap-highlight-color: transparent; }
     .checkout-btn:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; }
   </style>
 </head>
@@ -377,7 +387,6 @@
       });
     }
 
-    // 🛠️ 変更：短冊エリア（縦書き）を組み込んだ HTML レンダー処理
     function renderSwipePages(cats) {
       const swipeView = document.getElementById('swipe-view');
       swipeView.innerHTML = '';
@@ -391,16 +400,25 @@
           const card = document.createElement('div'); card.className = 'menu-card';
           const qtyId = 'qty-' + idx + '-' + item.menu_id;
           
+          // 🛠️ 変更：スプレッドシートの「<br>」タグや実際の改行コードを正しく処理する形に修正
+          let formattedName = item.name.replace(/<br\s*\/?>/gi, '\n');
+
           card.innerHTML = '<div class="menu-img-wrapper">' + (item.image ? '<img src="' + item.image + '" class="menu-img" loading="lazy">' : '<span class="no-img-text">画像なし</span>') + '</div>' +
             '<div class="menu-card-body">' +
               '' +
               '<div class="vertical-text-area">' +
-                '<p class="menu-name">' + item.name + '</p>' +
-                '<p class="menu-price">' + Number(item.price).toLocaleString() + '円</p>' +
+                '<p class="menu-name">' + formattedName + '</p>' +
               '</div>' +
               '' +
-              '<div style="width: 100%;">' +
-                '<div class="qty-area"><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', -1)">-</button><span id="' + qtyId + '" style="font-weight:bold; width:20px; text-align:center;">1</span><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', 1)">+</button></div>' +
+              '<div>' +
+                '<div class="price-area">' +
+                  '<span class="menu-price">' + Number(item.price).toLocaleString() + '円</span>' +
+                '</div>' +
+                '<div class="qty-area">' +
+                  '<button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', -1)">-</button>' +
+                  '<span id="' + qtyId + '" style="font-weight:bold; width:20px; text-align:center;">1</span>' +
+                  '<button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', 1)">+</button>' +
+                '</div>' +
                 '<button class="add-cart-btn" onclick="addToCart(\'' + item.menu_id + '\', \'' + item.name + '\', ' + item.price + ', \'' + qtyId + '\')">追加</button>' +
               '</div>' +
             '</div>';
