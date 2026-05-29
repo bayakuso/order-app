@@ -144,16 +144,19 @@
       width: 100%;
       box-sizing: border-box;
       padding-right: 4px;
-      overflow: visible;
+      overflow: hidden; /* はみ出た文字の制御用 */
     }
     
+    /* 🛠️ 改善：メニュー名の自動縮小＆絶対改行防止ルール */
     .menu-name { 
       font-weight: bold; 
-      font-size: clamp(12px, 11cqi, 20px); 
+      font-size: clamp(10px, 9cqi, 18px); 
       line-height: 1.2;
       letter-spacing: 1px;
       color: #111;
-      white-space: pre;
+      white-space: nowrap; /* 自動改行を完全にブロック */
+      overflow: hidden;    /* 万が一カード枠を越えたら隠す */
+      text-overflow: ellipsis; /* はみ出し時は「…」にする */
       margin: 0;
     }
 
@@ -168,13 +171,34 @@
     .add-cart-btn { width: 100%; background-color: #fff; border: 1px solid #d32f2f; color: #d32f2f; padding: 6px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; cursor: pointer; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; -webkit-tap-highlight-color: transparent; }
     .add-cart-btn.has-option { background-color: #fff8f8; border-color: #d32f2f; color: #d32f2f; }
 
-    /* 下部カートバー */
-    .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #fff; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); padding: 12px 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
+    /* 🛠️ 改善：下部カートバー全体の横幅を最大活用する調整 */
+    .cart-bar { 
+      position: fixed; bottom: 0; left: 0; width: 100%; background-color: #fff; 
+      box-shadow: 0 -4px 10px rgba(0,0,0,0.1); 
+      padding: 12px 10px; /* 左右の余白を少し詰めてボタンの活動域を広げる */
+      box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; 
+    }
     
-    .cart-info-btn { background: #f5f5f5; border: 1px solid #ccc; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; color: #333; cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; gap: 4px; }
+    /* 🛠️ 改善：「選択中」ボタンをどんな解像度でも絶対1行にする調整 */
+    .cart-info-btn { 
+      background: #f5f5f5; border: 1px solid #ccc; 
+      padding: 6px 8px; /* 内側の余白を少しタイトに */
+      border-radius: 20px; 
+      font-size: 0.78rem; /* 文字サイズをわずかにコンパクトに */
+      color: #333; cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; gap: 2px; 
+      white-space: nowrap; /* 絶対に途中で改行させない */
+    }
     .cart-info-btn:active { background: #e0e0e0; }
 
-    .checkout-btn { background-color: #d32f2f; color: white; border: none; padding: 12px 24px; border-radius: 4px; font-weight: bold; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 8px rgba(211, 47, 47, 0.3); -webkit-tap-highlight-color: transparent; }
+    /* 🛠️ 改善：「注文を確定する」ボタンを絶対1行にする調整 */
+    .checkout-btn { 
+      background-color: #d32f2f; color: white; border: none; 
+      padding: 12px 12px; /* 左右の余白を詰めて幅調整 */
+      border-radius: 4px; font-weight: bold; 
+      font-size: 0.88rem; /* 狭い画面に合わせて最適化 */
+      cursor: pointer; box-shadow: 0 4px 8px rgba(211, 47, 47, 0.3); -webkit-tap-highlight-color: transparent; 
+      white-space: nowrap; /* 絶対に途中で改行させない */
+    }
     .checkout-btn:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; }
   </style>
 </head>
@@ -470,7 +494,6 @@
           let formattedName = item.name.replace(/<br\s*\/?>/gi, '\n');
           let buttonHtml = '';
           
-          // 🛠️ 修正：'${qtyId}' にシングルクォーテーションを付けて、正しい「文字列」として関数に渡るよう修正
           if (item.options && item.options.trim() !== '') {
             buttonHtml = `<button class="add-cart-btn has-option" onclick="openOptionModal('${item.menu_id}', '${qtyId}')">飲み方選択</button>`;
           } else {
