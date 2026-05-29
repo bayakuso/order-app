@@ -141,20 +141,18 @@
       overflow: visible; 
     }
     
-    /* ① 改行なし用（1行に収めてはみ出たら…にする） */
+        /* ① 改行なし用（改行指示はないが、長い場合は枠に合わせて自動縮小し、絶対に…にしない） */
     .menu-name-single { 
       font-weight: bold; 
-      font-size: clamp(10px, 9cqi, 18px); 
-      line-height: 1.2;
+      font-size: clamp(7px, 9cqi, 18px); /* 👈 下限を7pxまで引き下げ、自動縮小を効かせます */
+      line-height: 1.1;
       letter-spacing: 0.5px;
       color: #111;
-      white-space: nowrap; 
-      overflow: hidden;    
-      text-overflow: ellipsis; 
+      white-space: normal; /* 👈 nowrap（1行固定）を廃止し、ブラウザの自動縮小ロジックを強制起動 */
       margin: 0;
     }
 
-    /* ② 改行あり用（改行位置を維持して、絶対に…にせず最小7pxまで自動縮小して収める） */
+    /* ② 改行あり用（指定位置での改行を維持し、最小7pxまで自動縮小） */
     .menu-name-multi { 
       font-weight: bold; 
       font-size: clamp(7px, 8cqi, 16px); 
