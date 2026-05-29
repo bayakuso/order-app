@@ -138,16 +138,26 @@
       overflow: hidden;
     }
     
-    /* メニュー名の自動縮小＆絶対改行防止ルール */
+    /* 修正後：改行を許可しつつ、はみ出る分は省略する */
     .menu-name { 
       font-weight: bold; 
       font-size: clamp(10px, 9cqi, 18px); 
       line-height: 1.2;
       letter-spacing: 1px;
       color: #111;
-      white-space: nowrap; 
+      
+      /* 改行を許可する設定 */
+      white-space: pre-wrap; 
+      
+      /* はみ出した時の処理 */
       overflow: hidden;    
-      text-overflow: ellipsis; 
+      text-overflow: ellipsis;
+      
+      /* 縦書きで「複数行」の省略はCSSだけだと難しいため、行数を制限する */
+      display: -webkit-box;
+      -webkit-line-clamp: 3; /* ここで縦書きの「行数」を制限（必要に応じて2〜4に調整してください） */
+      -webkit-box-orient: vertical;
+      
       margin: 0;
     }
 
