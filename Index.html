@@ -80,13 +80,19 @@
     .option-item input { margin-right: 12px; transform: scale(1.2); }
     .option-item.selected { border-color: #d32f2f; background-color: #fff8f8; color: #d32f2f; }
 
-    /* 🛠️ 新設：カート中身確認用のスタイル */
-    .cart-list-container { max-height: 240px; overflow-y: auto; text-align: left; margin-bottom: 15px; }
-    .cart-item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #c8bfae; }
+    /* カート中身確認用のスタイル */
+    .cart-list-container { max-height: 260px; overflow-y: auto; text-align: left; margin-bottom: 15px; }
+    .cart-item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed #c8bfae; }
     .cart-item-info { flex-grow: 1; padding-right: 8px; }
     .cart-item-name { font-weight: bold; font-size: 0.95rem; color: #111; }
-    .cart-item-details { font-size: 0.8rem; color: #666; margin-top: 2px; }
-    .cart-delete-btn { background: none; border: none; color: #d32f2f; font-size: 1.3rem; cursor: pointer; padding: 4px 8px; -webkit-tap-highlight-color: transparent; }
+    
+    /* 🛠️ 変更：合計金額表記をなくし、価格の単価のみシンプルに表示 */
+    .cart-item-price-label { font-size: 0.8rem; color: #666; margin-top: 2px; }
+
+    /* 🛠️ 変更：ポップアップ内の数量調整エリア用のデザイン（メニュー側と統一） */
+    .cart-qty-area { display: flex; justify-content: center; align-items: center; gap: 8px; font-family: sans-serif; }
+    .cart-qty-btn { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+    .cart-qty-display { font-weight: bold; width: 22px; text-align: center; font-size: 1rem; color: #111; }
 
     /* カテゴリタブ */
     .tab-wrapper { position: sticky; top: 0; background-color: #f4efe8; padding: 10px 16px; z-index: 10; border-bottom: 2px solid #d32f2f; }
@@ -154,32 +160,20 @@
       margin: 0;
     }
 
-    /* 料金エリア（横書き・数量の上に左寄せ） */
-    .price-area {
-      width: 100%;
-      text-align: left;
-      padding-left: 4px;
-      margin-top: 8px;
-    }
-    .menu-price { 
-      color: #1a252c; 
-      font-weight: bold; 
-      font-size: 1rem; 
-      font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
-    }
+    /* 料金エリア（横書き） */
+    .price-area { width: 100%; text-align: left; padding-left: 4px; margin-top: 8px; }
+    .menu-price { color: #1a252c; font-weight: bold; font-size: 1rem; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
 
     /* 操作エリア */
     .qty-area { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 6px 0; font-family: sans-serif; }
     .qty-btn { width: 28px; height: 28px; border-radius: 4px; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
     
-    /* 通常追加ボタンと飲み方選択ボタン共通 */
     .add-cart-btn { width: 100%; background-color: #fff; border: 1px solid #d32f2f; color: #d32f2f; padding: 6px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; cursor: pointer; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; -webkit-tap-highlight-color: transparent; }
     .add-cart-btn.has-option { background-color: #fff8f8; border-color: #d32f2f; color: #d32f2f; }
 
     /* 下部カートバー */
     .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #fff; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); padding: 12px 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
     
-    /* 🛠️ 変更：カート情報をタップできるボタン風のデザインに */
     .cart-info-btn { background: #f5f5f5; border: 1px solid #ccc; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; color: #333; cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; gap: 4px; }
     .cart-info-btn:active { background: #e0e0e0; }
 
@@ -267,7 +261,7 @@
   
   <div class="cart-bar">
     <button class="cart-info-btn" onclick="openCartListModal()">
-      📋 選択中: <span id="cart-count" style="color: #d32f2f; font-size: 1rem;">0</span> 点 (確認/削除)
+      📋 選択中: <span id="cart-count" style="color: #d32f2f; font-size: 1rem;">0</span> 点 (確認/修正)
     </button>
     <button id="checkout-btn" class="checkout-btn" onclick="openOrderModal()" disabled>注文を確定する</button>
   </div>
@@ -334,7 +328,7 @@
     function openSuccessModal() { document.getElementById('success-modal').style.display = 'flex'; }
     function closeSuccessModal() { document.getElementById('success-modal').style.display = 'none'; }
 
-    // 🛠️ 新設：カート中身確認モーダルを開く処理（一覧をその場で組み立て）
+    // カート中身確認モーダルを開く処理
     function openCartListModal() {
       const container = document.getElementById('cart-list-items');
       container.innerHTML = '';
@@ -345,16 +339,21 @@
         return;
       }
 
-      // カートの中身をループして1行ずつ生成
       cart.forEach((item, index) => {
         const row = document.createElement('div');
         row.className = 'cart-item-row';
+        
+        // 🛠️ 変更：合計金額の表記を除去し、単価表示のみに。右側にメニュー選択と同じスタイルの「増減ボタン」を配置
         row.innerHTML = `
           <div class="cart-item-info">
             <div class="cart-item-name">${item.name}</div>
-            <div class="cart-item-details">${Number(item.price).toLocaleString()}円 × ${item.quantity}点 = <strong>${(item.price * item.quantity).toLocaleString()}円</strong></div>
+            <div class="cart-item-price-label">${Number(item.price).toLocaleString()}円</div>
           </div>
-          <button class="cart-delete-btn" onclick="removeCartItem(${index})">🗑️</button>
+          <div class="cart-qty-area">
+            <button class="cart-qty-btn" onclick="updateCartItemQty(${index}, -1)">-</button>
+            <span class="cart-qty-display">${item.quantity}</span>
+            <button class="cart-qty-btn" onclick="updateCartItemQty(${index}, 1)">+</button>
+          </div>
         `;
         container.appendChild(row);
       });
@@ -366,20 +365,32 @@
       document.getElementById('cart-list-modal').style.display = 'none';
     }
 
-    // 🛠️ 新設：指定された商品をカートから削除する関数
-    function removeCartItem(index) {
-      cart.splice(index, 1); // 指定番号のデータを配列から1個削除
+    // 🛠️ 新設：ポップアップ内専用の数量増減＆0個での自動削除処理
+    function updateCartItemQty(index, amt) {
+      cart[index].quantity += amt;
       
-      // 下部バーのトータル点数を再計算して更新
+      // 0以下になった場合は、カート配列から自動で綺麗に消し去る
+      if (cart[index].quantity <= 0) {
+        cart.splice(index, 1);
+      }
+      
+      // 下部バーの総合計点数の再計算と反映
+      updateCartTotalCount();
+
+      // 表示をその場でリフレッシュ（0個になった商品はリストから消える）
+      openCartListModal();
+    }
+
+    // 🛠️ 補助：カート全体の総数を再計算・同期する共通関数
+    function updateCartTotalCount() {
       const totalQty = cart.reduce((sum, i) => sum + i.quantity, 0);
       document.getElementById('cart-count').innerText = totalQty;
-
+      
       if (totalQty === 0) {
         document.getElementById('checkout-btn').disabled = true;
+      } else {
+        document.getElementById('checkout-btn').disabled = false;
       }
-
-      // 表示をリアルタイムでリフレッシュ（中身が空になった時の案内表示などのため）
-      openCartListModal();
     }
 
     function openOptionModal(itemJson, qtyId) {
@@ -418,8 +429,7 @@
       const ex = cart.find(i => i.menuId === currentOptionItem.menu_id && i.name === fullName);
       ex ? ex.quantity += q : cart.push({ menuId: currentOptionItem.menu_id, name: fullName, price: currentOptionItem.price, quantity: q });
       
-      document.getElementById('cart-count').innerText = cart.reduce((sum, i) => sum + i.quantity, 0);
-      document.getElementById('checkout-btn').disabled = false;
+      updateCartTotalCount();
       closeOptionModal();
     }
 
@@ -525,8 +535,7 @@
       const q = parseInt(document.getElementById(qtyId).innerText);
       const ex = cart.find(i => i.menuId === id && i.name === name);
       ex ? ex.quantity += q : cart.push({ menuId: id, name: name, price: price, quantity: q });
-      document.getElementById('cart-count').innerText = cart.reduce((sum, i) => sum + i.quantity, 0);
-      document.getElementById('checkout-btn').disabled = false;
+      updateCartTotalCount();
     }
   </script>
 </body>
