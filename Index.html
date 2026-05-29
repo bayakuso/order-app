@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>客席モバイルオーダー</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <style>
     /* 全体のデザイン調整 */
     body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; color: #333; overflow-x: hidden; }
@@ -22,6 +23,12 @@
     }
     .status-bar .time-highlight {
       color: #ffb74d;
+    }
+    /* 🛠️ 追加：スマホ連携ボタンのデザイン */
+    .qr-share-btn {
+      background-color: #ff9800; color: white; border: none;
+      padding: 4px 10px; border-radius: 4px; font-size: 0.75rem;
+      cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent;
     }
 
     /* ーーー モーダル（共通デザイン） ーーー */
@@ -88,8 +95,9 @@
     .menu-img { width: 100%; height: 100%; object-fit: cover; }
     .no-img-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #999; font-size: 0.8rem; }
     .menu-card-body { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
-    .menu-name { font-weight: bold; font-size: 0.95rem; margin: 0 0 4px 0; }
-    .menu-price { color: #e65100; font-weight: bold; font-size: 1rem; margin: 0 0 4px 0; } /* 🛠️ 下マージンを10pxから4pxに詰めて少し上に上げました */
+    .menu-card-body p { margin: 0; }
+    .menu-name { font-weight: bold; font-size: 0.95rem; margin-bottom: 4px !important; }
+    .menu-price { color: #e65100; font-weight: bold; font-size: 1rem; margin-bottom: 4px !important; }
     .qty-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
     .add-cart-btn { width: 100%; background-color: #fff; border: 1px solid #ff9800; color: #ff9800; padding: 8px; border-radius: 8px; font-weight: bold; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #fff; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); padding: 12px 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
@@ -109,6 +117,17 @@
         <button class="modal-btn" onclick="changeModalQty(1)">+</button>
       </div>
       <button class="modal-submit-btn" onclick="submitModalQty()">確定してメニューへ</button>
+    </div>
+  </div>
+
+  <div id="qr-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-title" style="margin-bottom: 10px;">自分のスマホで注文</div>
+      <p style="color: #666; font-size: 0.85rem; margin-bottom: 15px;">QRコードを読み取ると、この卓のメニューを手元で開けます（人数・時間は自動同期されます）。</p>
+      <div style="background: white; padding: 10px; display: inline-block; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <canvas id="qr-canvas"></canvas>
+      </div>
+      <button class="modal-submit-btn" style="margin-top: 20px; background-color: #546e7a;" onclick="closeQrModal()">閉じる</button>
     </div>
   </div>
 
@@ -133,7 +152,10 @@
 
   <div class="status-bar">
     <div>👥 人数: <span id="display-customer-count">-</span> 名様</div>
-    <div>🍻 乾杯: <span id="display-start-time" class="time-highlight">--:--</span></div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div>🍻 乾杯: <span id="display-start-time" class="time-highlight">--:--</span></div>
+      <button id="share-qr-nav-btn" class="qr-share-btn" onclick="openQrModal()" style="display: none;">📱 スマホ連携</button>
+    </div>
   </div>
 
   <h1>ご注文（卓番号: <span id="display-table-id">-</span>）</h1>
@@ -149,6 +171,12 @@
     
     const urlParams = new URLSearchParams(window.location.search);
     const tableId = urlParams.get('table') || '未設定';
+    const isViewer = urlParams.get('viewer') === 'true'; 
+    
+    // 🛠️ 追加：URLから引き継いだ人数と時間を取得
+    const passedNum = urlParams.get('num');
+    const passedTime = urlParams.get('time');
+
     document.getElementById('display-table-id').innerText = tableId;
 
     let allMenus = [], categoryList = [], cart = [];
@@ -156,6 +184,7 @@
     let clickTimeout;
     
     let tempCustomerCount = 1;
+    let finalStartTime = '--:--'; // 🛠️ 共有用に時間を保持する変数
 
     function changeModalQty(amt) {
       tempCustomerCount += amt;
@@ -165,6 +194,15 @@
 
     document.addEventListener("DOMContentLoaded", function() {
         document.getElementById('modal-count').innerText = tempCustomerCount;
+        
+        if (isViewer) {
+          // 🛠️ 変更：個人スマホ（viewer）の時は、URLのデータをそのままステータスバーに表示
+          document.getElementById('customer-modal').style.display = 'none';
+          document.getElementById('display-customer-count').innerText = passedNum || '-';
+          document.getElementById('display-start-time').innerText = passedTime ? decodeURIComponent(passedTime) : '--:--';
+          
+          fetchMenus();
+        }
     });
 
     function submitModalQty() {
@@ -173,11 +211,36 @@
       const now = new Date();
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
-      document.getElementById('display-start-time').innerText = hours + ':' + minutes;
+      finalStartTime = hours + ':' + minutes;
+      document.getElementById('display-start-time').innerText = finalStartTime;
 
       document.getElementById('customer-modal').style.display = 'none';
+      
+      // 🛠️ 追加：据え置き端末側なら「スマホ連携」ボタンを表示する
+      document.getElementById('share-qr-nav-btn').style.display = 'inline-block';
 
       fetchMenus();
+    }
+
+    // 🛠️ 追加：QRコードモーダルの開閉と生成処理
+    function openQrModal() {
+      // 現在の「ベースURL（末尾の?以降を除いたもの）」を取得
+      const baseUrl = window.location.origin + window.location.pathname;
+      
+      // お客様のスマホに渡す情報を含んだURLを動的に組み立て
+      const shareUrl = `${baseUrl}?table=${encodeURIComponent(tableId)}&viewer=true&num=${tempCustomerCount}&time=${encodeURIComponent(finalStartTime)}`;
+      
+      // QRコードを生成してcanvasに描画
+      new QRious({
+        element: document.getElementById('qr-canvas'),
+        value: shareUrl,
+        size: 200
+      });
+
+      document.getElementById('qr-modal').style.display = 'flex';
+    }
+    function closeQrModal() {
+      document.getElementById('qr-modal').style.display = 'none';
     }
 
     function openOrderModal() {
@@ -192,7 +255,6 @@
       document.getElementById('success-modal').style.display = 'flex';
     }
     function closeSuccessModal() {
-      document.getElementById('success-modal').style.none = 'none';
       document.getElementById('success-modal').style.display = 'none';
     }
 
@@ -292,8 +354,6 @@
           
           card.innerHTML = '<div class="menu-img-wrapper">' + (item.image ? '<img src="' + item.image + '" class="menu-img" loading="lazy">' : '<span class="no-img-text">No Image</span>') + '</div>' +
             '<div class="menu-card-body"><p class="menu-name">' + item.name + '</p><p class="menu-price">' + Number(item.price).toLocaleString() + '円</p>' +
-            // 🛠️ 変更箇所：
-            // 「margin: 2px 0 8px 0;」を追加し、価格に少し近づけ（上に上げ）、下の「カートへ追加」ボタンとの間に少し隙間を空けました。
             '<div style="display:flex; justify-content:center; align-items:center; gap:10px; margin:2px 0 8px 0;"><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', -1)">-</button><span id="' + qtyId + '" style="font-weight:bold; width:24px; text-align:center;">1</span><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', 1)">+</button></div>' +
             '<button class="add-cart-btn" onclick="addToCart(\'' + item.menu_id + '\', \'' + item.name + '\', ' + item.price + ', \'' + qtyId + '\')">カートへ追加</button></div>';
           grid.appendChild(card);
