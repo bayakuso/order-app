@@ -85,11 +85,9 @@
     .cart-item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed #c8bfae; }
     .cart-item-info { flex-grow: 1; padding-right: 8px; }
     .cart-item-name { font-weight: bold; font-size: 0.95rem; color: #111; }
-    
-    /* 🛠️ 変更：合計金額表記をなくし、価格の単価のみシンプルに表示 */
     .cart-item-price-label { font-size: 0.8rem; color: #666; margin-top: 2px; }
 
-    /* 🛠️ 変更：ポップアップ内の数量調整エリア用のデザイン（メニュー側と統一） */
+    /* ポップアップ内の数量調整エリア用のデザイン */
     .cart-qty-area { display: flex; justify-content: center; align-items: center; gap: 8px; font-family: sans-serif; }
     .cart-qty-btn { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
     .cart-qty-display { font-weight: bold; width: 22px; text-align: center; font-size: 1rem; color: #111; }
@@ -149,7 +147,6 @@
       overflow: visible;
     }
     
-    /* 勝手な自動折り返しを禁止し、1行のまま綺麗に縮小させる */
     .menu-name { 
       font-weight: bold; 
       font-size: clamp(12px, 11cqi, 20px); 
@@ -160,7 +157,7 @@
       margin: 0;
     }
 
-    /* 料金エリア（横書き） */
+    /* 料金エリア */
     .price-area { width: 100%; text-align: left; padding-left: 4px; margin-top: 8px; }
     .menu-price { color: #1a252c; font-weight: bold; font-size: 1rem; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
 
@@ -328,7 +325,6 @@
     function openSuccessModal() { document.getElementById('success-modal').style.display = 'flex'; }
     function closeSuccessModal() { document.getElementById('success-modal').style.display = 'none'; }
 
-    // カート中身確認モーダルを開く処理
     function openCartListModal() {
       const container = document.getElementById('cart-list-items');
       container.innerHTML = '';
@@ -342,8 +338,6 @@
       cart.forEach((item, index) => {
         const row = document.createElement('div');
         row.className = 'cart-item-row';
-        
-        // 🛠️ 変更：合計金額の表記を除去し、単価表示のみに。右側にメニュー選択と同じスタイルの「増減ボタン」を配置
         row.innerHTML = `
           <div class="cart-item-info">
             <div class="cart-item-name">${item.name}</div>
@@ -361,40 +355,26 @@
       document.getElementById('cart-list-modal').style.display = 'flex';
     }
 
-    function closeCartListModal() {
-      document.getElementById('cart-list-modal').style.display = 'none';
-    }
+    function closeCartListModal() { document.getElementById('cart-list-modal').style.display = 'none'; }
 
-    // 🛠️ 新設：ポップアップ内専用の数量増減＆0個での自動削除処理
     function updateCartItemQty(index, amt) {
       cart[index].quantity += amt;
-      
-      // 0以下になった場合は、カート配列から自動で綺麗に消し去る
-      if (cart[index].quantity <= 0) {
-        cart.splice(index, 1);
-      }
-      
-      // 下部バーの総合計点数の再計算と反映
+      if (cart[index].quantity <= 0) { cart.splice(index, 1); }
       updateCartTotalCount();
-
-      // 表示をその場でリフレッシュ（0個になった商品はリストから消える）
       openCartListModal();
     }
 
-    // 🛠️ 補助：カート全体の総数を再計算・同期する共通関数
     function updateCartTotalCount() {
       const totalQty = cart.reduce((sum, i) => sum + i.quantity, 0);
       document.getElementById('cart-count').innerText = totalQty;
-      
-      if (totalQty === 0) {
-        document.getElementById('checkout-btn').disabled = true;
-      } else {
-        document.getElementById('checkout-btn').disabled = false;
-      }
+      document.getElementById('checkout-btn').disabled = (totalQty === 0);
     }
 
-    function openOptionModal(itemJson, qtyId) {
-      const item = JSON.parse(decodeURIComponent(itemJson));
+    // 🛠️ 修正：画像なしメニューでも安全に開けるように引数の渡し方を修正
+    function openOptionModal(menuId, qtyId) {
+      const item = allMenus.find(m => m.menu_id == menuId);
+      if (!item) return;
+      
       currentOptionItem = item;
       currentOptionQtyId = qtyId;
       document.getElementById('option-modal-title').innerText = `【${item.name}】の飲み方`;
@@ -490,12 +470,14 @@
           const qtyId = 'qty-' + idx + '-' + item.menu_id;
           let formattedName = item.name.replace(/<br\s*\/?>/gi, '\n');
           let buttonHtml = '';
+          
+          // 🛠️ 修正：画像URLなどの巨大データをボタン内に直接埋め込まず、シンプルなID指定で動くように安全化
           if (item.options && item.options.trim() !== '') {
-            const itemJson = encodeURIComponent(JSON.stringify(item));
-            buttonHtml = `<button class="add-cart-btn has-option" onclick="openOptionModal('${itemJson}', '${qtyId}')">飲み方選択</button>`;
+            buttonHtml = `<button class="add-cart-btn has-option" onclick="openOptionModal('${item.menu_id}', '${qtyId}')">飲み方選択</button>`;
           } else {
-            buttonHtml = `<button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${item.name}', ${item.price}, '${qtyId}')">追加</button>`;
+            buttonHtml = `<button class="add-cart-btn" onclick="addToCart('${item.menu_id}', ${qtyId})">追加</button>`;
           }
+          
           card.innerHTML = '<div class="menu-img-wrapper">' + (item.image ? '<img src="' + item.image + '" class="menu-img" loading="lazy">' : '<span class="no-img-text">画像なし</span>') + '</div>' +
             '<div class="menu-card-body">' +
               '<div class="vertical-text-area"><p class="menu-name">' + formattedName + '</p></div>' +
@@ -531,10 +513,14 @@
 
     function changeQty(id, amt) { const el = document.getElementById(id); let q = parseInt(el.innerText) + amt; el.innerText = q < 1 ? 1 : q; }
     
-    function addToCart(id, name, price, qtyId) {
+    // 🛠️ 修正：引数をメニューIDと数量の要素IDだけに絞り、データはマスター（allMenus）から直接安全に引く設計に変更
+    function addToCart(id, qtyId) {
+      const item = allMenus.find(m => m.menu_id == id);
+      if (!item) return;
+      
       const q = parseInt(document.getElementById(qtyId).innerText);
-      const ex = cart.find(i => i.menuId === id && i.name === name);
-      ex ? ex.quantity += q : cart.push({ menuId: id, name: name, price: price, quantity: q });
+      const ex = cart.find(i => i.menuId === id && i.name === item.name);
+      ex ? ex.quantity += q : cart.push({ menuId: id, name: item.name, price: item.price, quantity: q });
       updateCartTotalCount();
     }
   </script>
