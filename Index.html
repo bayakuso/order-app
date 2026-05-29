@@ -121,26 +121,16 @@
       container-type: inline-size;
     }
     
-    /* 写真エリア */
-/* 写真エリア */
-.menu-img-wrapper { 
-  width: 100%; 
-  
-  /* 🛠️ 変更：映画や動画と同じ「16:9」のスマートな比率に固定 */
-  aspect-ratio: 16 / 9; 
-  
-  background-color: #eae5da; 
-  position: relative; 
-  border-bottom: 1px dashed #c8bfae; 
-  overflow: hidden;
-}
-
-.menu-img { 
-  width: 100%; 
-  height: 100%; 
-  object-fit: cover; /* 16:9の枠に合わせて写真を綺麗にトリミング表示 */
-  filter: sepia(8%); 
-}
+    /* 写真エリア（16:9の比率を完全に固定） */
+    .menu-img-wrapper { 
+      width: 100%; 
+      aspect-ratio: 16 / 9; 
+      background-color: #eae5da; 
+      position: relative; 
+      border-bottom: 1px dashed #c8bfae; 
+      overflow: hidden;
+    }
+    .menu-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(8%); }
     .no-img-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #baae9e; font-size: 0.75rem; font-family: sans-serif; }
     
     .menu-card-body { 
@@ -161,19 +151,19 @@
       width: 100%;
       box-sizing: border-box;
       padding-right: 4px;
-      overflow: hidden; /* はみ出た文字の制御用 */
+      overflow: hidden;
     }
     
-    /* 🛠️ 改善：メニュー名の自動縮小＆絶対改行防止ルール */
+    /* メニュー名の自動縮小＆絶対改行防止ルール */
     .menu-name { 
       font-weight: bold; 
       font-size: clamp(10px, 9cqi, 18px); 
       line-height: 1.2;
       letter-spacing: 1px;
       color: #111;
-      white-space: nowrap; /* 自動改行を完全にブロック */
-      overflow: hidden;    /* 万が一カード枠を越えたら隠す */
-      text-overflow: ellipsis; /* はみ出し時は「…」にする */
+      white-space: nowrap; 
+      overflow: hidden;    
+      text-overflow: ellipsis; 
       margin: 0;
     }
 
@@ -188,33 +178,33 @@
     .add-cart-btn { width: 100%; background-color: #fff; border: 1px solid #d32f2f; color: #d32f2f; padding: 6px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; cursor: pointer; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; -webkit-tap-highlight-color: transparent; }
     .add-cart-btn.has-option { background-color: #fff8f8; border-color: #d32f2f; color: #d32f2f; }
 
-    /* 🛠️ 改善：下部カートバー全体の横幅を最大活用する調整 */
+    /* 下部カートバー全体の横幅最適化 */
     .cart-bar { 
       position: fixed; bottom: 0; left: 0; width: 100%; background-color: #fff; 
       box-shadow: 0 -4px 10px rgba(0,0,0,0.1); 
-      padding: 12px 10px; /* 左右の余白を少し詰めてボタンの活動域を広げる */
+      padding: 12px 10px; 
       box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; 
     }
     
-    /* 🛠️ 改善：「選択中」ボタンをどんな解像度でも絶対1行にする調整 */
+    /* 「選択中」ボタン（絶対1行） */
     .cart-info-btn { 
       background: #f5f5f5; border: 1px solid #ccc; 
-      padding: 6px 8px; /* 内側の余白を少しタイトに */
+      padding: 6px 8px; 
       border-radius: 20px; 
-      font-size: 0.78rem; /* 文字サイズをわずかにコンパクトに */
+      font-size: 0.78rem; 
       color: #333; cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; gap: 2px; 
-      white-space: nowrap; /* 絶対に途中で改行させない */
+      white-space: nowrap; 
     }
     .cart-info-btn:active { background: #e0e0e0; }
 
-    /* 🛠️ 改善：「注文を確定する」ボタンを絶対1行にする調整 */
+    /* 「注文を確定する」ボタン（絶対1行） */
     .checkout-btn { 
       background-color: #d32f2f; color: white; border: none; 
-      padding: 12px 12px; /* 左右の余白を詰めて幅調整 */
+      padding: 12px 12px; 
       border-radius: 4px; font-weight: bold; 
-      font-size: 0.88rem; /* 狭い画面に合わせて最適化 */
+      font-size: 0.88rem; 
       cursor: pointer; box-shadow: 0 4px 8px rgba(211, 47, 47, 0.3); -webkit-tap-highlight-color: transparent; 
-      white-space: nowrap; /* 絶対に途中で改行させない */
+      white-space: nowrap; 
     }
     .checkout-btn:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; }
   </style>
@@ -493,6 +483,10 @@
           document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active');
           const tabContainer = document.getElementById('tab-container'); tabContainer.scrollLeft = btn.offsetLeft - (tabContainer.clientWidth / 2) + (btn.clientWidth / 2);
           const targetPage = document.getElementById('page-' + i); if(targetPage) { document.getElementById('swipe-view').scrollLeft = targetPage.offsetLeft; }
+          
+          // 🛠️ 追加：タブをタップしたときも画面を一番上に戻す
+          window.scrollTo({ top: 0, behavior: 'instant' });
+
           clickTimeout = setTimeout(() => { isTabClicking = false; }, 500);
         };
         container.appendChild(btn);
@@ -546,6 +540,9 @@
           document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active')); targetTab.classList.add('active');
           const tabContainer = document.getElementById('tab-container'); const targetLeft = targetTab.offsetLeft - (tabContainer.clientWidth / 2) + (targetTab.clientWidth / 2);
           tabContainer.scrollTo({ left: targetLeft, behavior: 'smooth' });
+
+          // 🛠️ 追加：横スワイプでカテゴリが変わったときも画面を一番上に戻す
+          window.scrollTo({ top: 0, behavior: 'instant' });
         }
       });
     }
