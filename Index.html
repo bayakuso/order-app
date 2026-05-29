@@ -89,7 +89,7 @@
     .no-img-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #999; font-size: 0.8rem; }
     .menu-card-body { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
     .menu-name { font-weight: bold; font-size: 0.95rem; margin: 0 0 4px 0; }
-    .menu-price { color: #e65100; font-weight: bold; font-size: 1rem; margin: 0 0 10px 0; }
+    .menu-price { color: #e65100; font-weight: bold; font-size: 1rem; margin: 0 0 4px 0; } /* 🛠️ 下マージンを10pxから4pxに詰めて少し上に上げました */
     .qty-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
     .add-cart-btn { width: 100%; background-color: #fff; border: 1px solid #ff9800; color: #ff9800; padding: 8px; border-radius: 8px; font-weight: bold; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #fff; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); padding: 12px 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
@@ -290,12 +290,11 @@
           const card = document.createElement('div'); card.className = 'menu-card';
           const qtyId = 'qty-' + idx + '-' + item.menu_id;
           
-          // 🛠️ 変更箇所：
-          // 1. imgタグに loading="lazy" を追加して画像を軽量化
-          // 2. 数量表示部分に align-items:center、font-weight:bold、width を追加して上下中央に完璧に整列
           card.innerHTML = '<div class="menu-img-wrapper">' + (item.image ? '<img src="' + item.image + '" class="menu-img" loading="lazy">' : '<span class="no-img-text">No Image</span>') + '</div>' +
             '<div class="menu-card-body"><p class="menu-name">' + item.name + '</p><p class="menu-price">' + Number(item.price).toLocaleString() + '円</p>' +
-            '<div style="display:flex; justify-content:center; align-items:center; gap:10px;"><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', -1)">-</button><span id="' + qtyId + '" style="font-weight:bold; width:24px; text-align:center;">1</span><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', 1)">+</button></div>' +
+            // 🛠️ 変更箇所：
+            // 「margin: 2px 0 8px 0;」を追加し、価格に少し近づけ（上に上げ）、下の「カートへ追加」ボタンとの間に少し隙間を空けました。
+            '<div style="display:flex; justify-content:center; align-items:center; gap:10px; margin:2px 0 8px 0;"><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', -1)">-</button><span id="' + qtyId + '" style="font-weight:bold; width:24px; text-align:center;">1</span><button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', 1)">+</button></div>' +
             '<button class="add-cart-btn" onclick="addToCart(\'' + item.menu_id + '\', \'' + item.name + '\', ' + item.price + ', \'' + qtyId + '\')">カートへ追加</button></div>';
           grid.appendChild(card);
         });
