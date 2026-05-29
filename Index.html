@@ -141,24 +141,23 @@
       overflow: visible; 
     }
     
-    /* ① 改行なし用（改行させず、1列のまま長い分だけ綺麗に自動縮小する） */
+  /* ① 改行なし用（改行せず、1列のまま長い分だけ綺麗に自動縮小：現状維持） */
     .menu-name-single { 
       font-weight: bold; 
-      /* 🛠️ 縦の枠（120px）に合わせて文字が1列のまま自動縮小するようにブレンド */
       font-size: clamp(9px, 7.5cqi, 18px); 
       line-height: 1.1;
       letter-spacing: 0.5px;
       color: #111;
-      white-space: nowrap; /* 👈 勝手な自動改行を完全に禁止（1列を死守） */
+      white-space: nowrap; 
       margin: 0;
     }
 
-    /* ② 改行あり用（スプレッドシートの改行指示を活かし、窮屈すぎない自然なサイズ） */
+    /* ② 改行あり用（🛠️自動縮小を廃止。他のメニューと同じサイズで堂々と表示） */
     .menu-name-multi { 
       font-weight: bold; 
-      font-size: clamp(10px, 8cqi, 16px); 
-      line-height: 1.3; 
-      letter-spacing: 0.5px; 
+      font-size: 16px;       /* 👈 自動縮小(clamp)を捨て、他の標準メニューと同じ大きさに固定 */
+      line-height: 1.3;      /* 列と列の間のゆったりした間隔 */
+      letter-spacing: 0.5px; /* 文字の上下の程よいゆとり */
       color: #111;
       white-space: pre-wrap; 
       margin: 0;
