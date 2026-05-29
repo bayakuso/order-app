@@ -558,21 +558,43 @@
       });
     }
 
-    function initSwipeListener() {
+        function initSwipeListener() {
       const swipeView = document.getElementById('swipe-view');
+      
+      // 🛠️ 改善：スワイプ中の位置監視
       swipeView.addEventListener('scroll', () => {
         if (isTabClicking) return;
-        const width = swipeView.clientWidth; const scrollLeft = swipeView.scrollLeft; const currentIdx = Math.round(scrollLeft / width);
+        const width = swipeView.clientWidth; 
+        const scrollLeft = swipeView.scrollLeft; 
+        const currentIdx = Math.round(scrollLeft / width);
+        
         const targetTab = document.getElementById('tab-btn-' + currentIdx);
         if (targetTab && !targetTab.classList.contains('active')) {
-          document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active')); targetTab.classList.add('active');
-          const tabContainer = document.getElementById('tab-container'); const targetLeft = targetTab.offsetLeft - (tabContainer.clientWidth / 2) + (targetTab.clientWidth / 2);
+          document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active')); 
+          targetTab.classList.add('active');
+          
+          const tabContainer = document.getElementById('tab-container'); 
+          const targetLeft = targetTab.offsetLeft - (tabContainer.clientWidth / 2) + (targetTab.clientWidth / 2);
           tabContainer.scrollTo({ left: targetLeft, behavior: 'smooth' });
-
-          // 🛠️ 変更：スワイプ先。新しく表示されたページのスクロールを1番上に戻す
-          const targetPage = document.getElementById('page-' + currentIdx);
-          if (targetPage) { targetPage.scrollTop = 0; }
         }
+      });
+
+      // 🛠️ 新設：スワイプがピタッと止まった瞬間（スクロール終了）を検知するイベント
+      swipeView.addEventListener('scrollend', () => {
+        const width = swipeView.clientWidth;
+        const currentIdx = Math.round(swipeView.scrollLeft / width);
+        
+        // すべてのカテゴリーページの縦スクロールを強制的に1番上(0)にリセットする
+        // これにより、ブラウザが記憶しているスクロール位置を完全に上書きします
+        document.querySelectorAll('.category-page').forEach((page, idx) => {
+          if (idx !== currentIdx) {
+            page.scrollTop = 0; 
+          }
+        });
+        
+        // 今表示されたページも念のため確実に1番上に
+        const activePage = document.getElementById('page-' + currentIdx);
+        if (activePage) { activePage.scrollTop = 0; }
       });
     }
 
