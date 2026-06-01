@@ -405,7 +405,7 @@
     function openSuccessModal() { document.getElementById('success-modal').style.display = 'flex'; }
     function closeSuccessModal() { document.getElementById('success-modal').style.display = 'none'; }
 
-   // 🛠️ 修正：選択中モーダルの表示ロジック（改行を取り除いた名前で綺麗にリスト表示）
+  // 🛠️ 確定版：選択中モーダルの表示ロジック（カート内の改行タグを画面表示のときだけ消す）
     function openCartListModal() {
       const container = document.getElementById('cart-list-items');
       container.innerHTML = '';
@@ -417,8 +417,10 @@
       cart.forEach((item, index) => {
         const row = document.createElement('div');
         row.className = 'cart-item-row';
-        // 表示する名前から改行を念のため除去
-        const displayName = item.name.replace(/\n/g, '');
+        
+        // 👈 【ココを修正】表示するときだけ、<br> や \n を綺麗に消して1行のテキストにする
+        const displayName = item.name.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '');
+        
         row.innerHTML = `
           <div class="cart-item-info">
             <div class="cart-item-name">${displayName}</div>
@@ -477,19 +479,18 @@
       currentOptionItem = null; currentOptionQtyId = null;
     }
 
-    // 🛠️ 修正：オプション選択時のカート追加ロジック
+   // 🛠️ 確定版：オプション選択時のカート追加ロジック（生の名前＋選択肢）
     function submitOptionSelect() {
       const selectedRadio = document.querySelector('input[name="menu-option"]:checked');
       if (!selectedRadio) return;
       const choice = selectedRadio.value;
       const q = parseInt(document.getElementById(currentOptionQtyId).innerText);
       
-      // 画面表示用（改行を含まない純粋な名前）と、送信用のフルネームを作成
-      const rawName = currentOptionItem.name.replace(/<br\s*\/?>/gi, '').trim();
-      const fullName = `${rawName}(${choice})`;
+      // スプレッドシートから取得した「加工前」の純正の名前を使用
+      const originalName = currentOptionItem.name.trim();
+      const fullName = `${originalName}(${choice})`;
       
       const ex = cart.find(i => i.menuId === currentOptionItem.menu_id && i.name === fullName);
-      // 送信データに、加工前の純粋な menuId と正しい名前を持たせる
       ex ? ex.quantity += q : cart.push({ menuId: currentOptionItem.menu_id, name: fullName, price: currentOptionItem.price, quantity: q });
       updateCartTotalCount();
       closeOptionModal();
@@ -618,17 +619,17 @@
     }
 
     function changeQty(id, amt) { const el = document.getElementById(id); let q = parseInt(el.innerText) + amt; el.innerText = q < 1 ? 1 : q; }
-    // 🛠️ 修正：通常メニューのカート追加ロジック
+   // 🛠️ 確定版：通常メニューのカート追加ロジック（生の名前をそのまま使う）
     function addToCart(id, qtyId) {
       const item = allMenus.find(m => m.menu_id == id);
       if (!item) return;
       const q = parseInt(document.getElementById(qtyId).innerText);
       
-      // 改行コードなどを完全に除去した、スプレッドシートと100%一致する本来の名前
-      const cleanName = item.name.replace(/<br\s*\/?>/gi, '').trim();
+      // スプレッドシートから取得した「加工前」の純正の名前をそのまま使用
+      const originalName = item.name.trim();
       
-      const ex = cart.find(i => i.menuId === id && i.name === cleanName);
-      ex ? ex.quantity += q : cart.push({ menuId: id, name: cleanName, price: item.price, quantity: q });
+      const ex = cart.find(i => i.menuId === id && i.name === originalName);
+      ex ? ex.quantity += q : cart.push({ menuId: id, name: originalName, price: item.price, quantity: q });
       updateCartTotalCount();
     }
   </script>
