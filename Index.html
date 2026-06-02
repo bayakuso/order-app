@@ -2,7 +2,12 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-color=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  
   <title>客席モバイルオーダー</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <style>
@@ -128,7 +133,7 @@
       flex-grow: 1; 
     }
 
-    /* 🛠️ 高さを一律120pxに完全固定（不揃い防止） */
+    /* 高さを一律120pxに完全固定（不揃い防止） */
     .vertical-text-area {
       writing-mode: vertical-rl;
       text-orientation: mixed;
@@ -141,7 +146,7 @@
       overflow: visible; 
     }
     
-  /* ① 改行なし用（改行せず、1列のまま長い分だけ綺麗に自動縮小：現状維持） */
+    /* ① 改行なし用（改行せず、1列のまま長い分だけ綺麗に自動縮小：現状維持） */
     .menu-name-single { 
       font-weight: bold; 
       font-size: clamp(9px, 7.5cqi, 18px); 
@@ -152,12 +157,12 @@
       margin: 0;
     }
 
-    /* ② 改行あり用（🛠️自動縮小を廃止。他のメニューと同じサイズで堂々と表示） */
+    /* ② 改行あり用（自動縮小を廃止。他のメニューと同じサイズで堂々と表示） */
     .menu-name-multi { 
       font-weight: bold; 
-      font-size: 16px;       /* 👈 自動縮小(clamp)を捨て、他の標準メニューと同じ大きさに固定 */
-      line-height: 1.3;      /* 列と列の間のゆったりした間隔 */
-      letter-spacing: 0.5px; /* 文字の上下の程よいゆとり */
+      font-size: 16px;       
+      line-height: 1.3;      
+      letter-spacing: 0.5px; 
       color: #111;
       white-space: pre-wrap; 
       margin: 0;
@@ -254,6 +259,29 @@
     .cart-qty-area { display: flex; justify-content: center; align-items: center; gap: 8px; font-family: sans-serif; }
     .cart-qty-btn { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
     .cart-qty-display { font-weight: bold; width: 22px; text-align: center; font-size: 1rem; color: #111; }
+
+    /* 🛠️ 拡張：お通し案内 兼 人数入力用全画面スタイル */
+    .welcome-container {
+      max-width: 500px; margin: 40px auto; padding: 30px 20px; text-align: center; color: #ffffff; font-family: sans-serif;
+    }
+    .announcement-box {
+      background-color: #1e1e1e; border: 1px solid #333333; border-radius: 8px; padding: 25px 15px; margin-bottom: 35px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .announcement-badge {
+      display: inline-block; background-color: #e63946; color: #fff; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 3px; margin-bottom: 12px; letter-spacing: 1px;
+    }
+    .announcement-price {
+      font-size: 28px; font-weight: bold; color: #ffcc00; margin-bottom: 15px;
+    }
+    .announcement-text {
+      font-size: 14px; color: #dddddd; line-height: 1.6; margin: 0; text-align: left; padding: 0 10px;
+    }
+    .guest-select-wrapper {
+      position: relative; max-width: 200px; margin: 0 auto;
+    }
+    .guest-select {
+      width: 100%; padding: 12px 15px; font-size: 18px; font-weight: bold; background-color: #2a2a2a; color: #ffffff; border: 2px solid #ffcc00; border-radius: 6px; appearance: none; cursor: pointer; text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -282,15 +310,45 @@
     <button id="checkout-btn" class="checkout-btn" onclick="openOrderModal()" disabled>注文を確定する</button>
   </div>
 
-  <div id="customer-modal" class="modal-overlay">
-    <div class="modal-content">
-      <div class="modal-title">ご来店人数を入力してください</div>
-      <div class="modal-counter">
-        <button class="modal-btn" onclick="changeModalQty(-1)">-</button>
-        <span id="modal-count" class="modal-count-display">1</span>
-        <button class="modal-btn" onclick="changeModalQty(1)">+</button>
+  <div id="customer-modal" class="modal-overlay" style="display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #121212; z-index: 10000; overflow-y: auto;">
+    <div class="welcome-container">
+      
+      <h2 style="font-size: 24px; margin-bottom: 10px; color: #ffcc00; letter-spacing: 1px;">いらっしゃいませ！</h2>
+      <p style="font-size: 14px; color: #aaaaaa; margin-bottom: 30px;">ご来店ありがとうございます。</p>
+      
+      <div class="announcement-box">
+        <span class="announcement-badge">システムのご案内</span>
+        <h3 style="font-size: 20px; margin: 0 0 15px 0; color: #ffffff; font-weight: 600;">お通し三品とお席料</h3>
+        <div class="announcement-price">
+          お一人様 <span style="font-size: 36px;">1,000</span> 円 <span style="font-size: 16px; color: #ffffff; font-weight: normal;">(税込)</span>
+        </div>
+        <p class="announcement-text">
+          当店では、最初にお酒が進む自慢の「お通し三品」を皆様にご提供しております。<br>
+          美味しいお酒と共に、ごゆっくりお楽しみください。
+        </p>
       </div>
-      <button class="modal-submit-btn" onclick="submitModalQty()">確定してメニューへ</button>
+      
+      <div style="margin-bottom: 35px;">
+        <label style="display: block; font-size: 15px; color: #cccccc; margin-bottom: 12px; font-weight: bold;">■ ご来店人数を選択してください</label>
+        <div class="guest-select-wrapper">
+          <select id="modal-guest-count" class="guest-select">
+            <option value="1">1 名</option>
+            <option value="2">2 名</option>
+            <option value="3">3 名</option>
+            <option value="4">4 名</option>
+            <option value="5">5 名</option>
+            <option value="6">6 名</option>
+            <option value="7">7 名</option>
+            <option value="8">8 名</option>
+          </select>
+          <div style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #ffcc00; pointer-events: none;">▼</div>
+        </div>
+      </div>
+      
+      <button onclick="submitModalQty()" style="width: 80%; max-width: 250px; padding: 15px; font-size: 18px; font-weight: bold; background: linear-gradient(135deg, #ffcc00, #ffa500); color: #000000; border: none; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 10px rgba(255,204,0,0.3); -webkit-tap-highlight-color: transparent;">
+        メニューを見る
+      </button>
+      
     </div>
   </div>
 
@@ -359,20 +417,12 @@
     let isTabClicking = false;
     let clickTimeout;
     
-    let tempCustomerCount = 1;
     let finalStartTime = '--:--';
 
     let currentOptionItem = null;
     let currentOptionQtyId = null;
 
-    function changeModalQty(amt) {
-      tempCustomerCount += amt;
-      if (tempCustomerCount < 1) tempCustomerCount = 1;
-      document.getElementById('modal-count').innerText = tempCustomerCount;
-    }
-
     document.addEventListener("DOMContentLoaded", function() {
-        document.getElementById('modal-count').innerText = tempCustomerCount;
         if (isViewer) {
           document.getElementById('customer-modal').style.display = 'none';
           document.getElementById('display-customer-count').innerText = passedNum || '-';
@@ -381,12 +431,16 @@
         }
     });
 
+    // 🛠️ 変更：セレクトボックスから選択された人数を取得して画面を開始するロジック
     function submitModalQty() {
-      document.getElementById('display-customer-count').innerText = tempCustomerCount;
+      const guestCount = document.getElementById('modal-guest-count').value;
+      document.getElementById('display-customer-count').innerText = guestCount;
+      
       const now = new Date();
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       finalStartTime = hours + ':' + minutes;
+      
       document.getElementById('display-start-time').innerText = finalStartTime;
       document.getElementById('customer-modal').style.display = 'none';
       document.getElementById('share-qr-nav-btn').style.display = 'inline-block';
@@ -395,17 +449,18 @@
 
     function openQrModal() {
       const baseUrl = window.location.origin + window.location.pathname;
-      const shareUrl = `${baseUrl}?table=${encodeURIComponent(tableId)}&viewer=true&num=${tempCustomerCount}&time=${encodeURIComponent(finalStartTime)}`;
+      const currentCount = document.getElementById('display-customer-count').innerText;
+      const shareUrl = `${baseUrl}?table=${encodeURIComponent(tableId)}&viewer=true&num=${currentCount}&time=${encodeURIComponent(finalStartTime)}`;
       new QRious({ element: document.getElementById('qr-canvas'), value: shareUrl, size: 200 });
       document.getElementById('qr-modal').style.display = 'flex';
     }
+    
     function closeQrModal() { document.getElementById('qr-modal').style.display = 'none'; }
     function openOrderModal() { document.getElementById('order-modal').style.display = 'flex'; }
     function closeOrderModal() { document.getElementById('order-modal').style.display = 'none'; }
     function openSuccessModal() { document.getElementById('success-modal').style.display = 'flex'; }
     function closeSuccessModal() { document.getElementById('success-modal').style.display = 'none'; }
 
-  // 🛠️ 確定版：選択中モーダルの表示ロジック（カート内の改行タグを画面表示のときだけ消す）
     function openCartListModal() {
       const container = document.getElementById('cart-list-items');
       container.innerHTML = '';
@@ -418,7 +473,6 @@
         const row = document.createElement('div');
         row.className = 'cart-item-row';
         
-        // 👈 【ココを修正】表示するときだけ、<br> や \n を綺麗に消して1行のテキストにする
         const displayName = item.name.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '');
         
         row.innerHTML = `
@@ -474,19 +528,18 @@
       document.querySelectorAll('.option-item').forEach(el => el.classList.remove('selected'));
       radio.parentElement.classList.add('selected');
     }
+    
     function closeOptionModal() {
       document.getElementById('option-modal').style.display = 'none';
       currentOptionItem = null; currentOptionQtyId = null;
     }
 
-   // 🛠️ 確定版：オプション選択時のカート追加ロジック（生の名前＋選択肢）
     function submitOptionSelect() {
       const selectedRadio = document.querySelector('input[name="menu-option"]:checked');
       if (!selectedRadio) return;
       const choice = selectedRadio.value;
       const q = parseInt(document.getElementById(currentOptionQtyId).innerText);
       
-      // スプレッドシートから取得した「加工前」の純正の名前を使用
       const originalName = currentOptionItem.name.trim();
       const fullName = `${originalName}(${choice})`;
       
@@ -558,9 +611,6 @@
           const qtyId = 'qty-' + idx + '-' + item.menu_id;
           
           let formattedName = item.name.replace(/<br\s*\/?>/gi, '\n');
-          
-          // 🛠️ 修正：逆になっていた条件を正しく入れ替え
-          // 改行(\n)が含まれていれば multi（改行用）、なければ single（改行なし用）
           let nameClass = formattedName.includes('\n') ? 'menu-name-multi' : 'menu-name-single';
           
           let buttonHtml = '';
@@ -619,13 +669,12 @@
     }
 
     function changeQty(id, amt) { const el = document.getElementById(id); let q = parseInt(el.innerText) + amt; el.innerText = q < 1 ? 1 : q; }
-   // 🛠️ 確定版：通常メニューのカート追加ロジック（生の名前をそのまま使う）
+    
     function addToCart(id, qtyId) {
       const item = allMenus.find(m => m.menu_id == id);
       if (!item) return;
       const q = parseInt(document.getElementById(qtyId).innerText);
       
-      // スプレッドシートから取得した「加工前」の純正の名前をそのまま使用
       const originalName = item.name.trim();
       
       const ex = cart.find(i => i.menuId === id && i.name === originalName);
