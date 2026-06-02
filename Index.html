@@ -218,21 +218,23 @@
       transition: background-color 0.2s, color 0.2s;
     }
 
-    /* 💡 蛍のようなゆっくりとした点滅アニメーション */
-    @keyframes hotaru-blink {
-      0% {
-        background-color: #d32f2f;
-        box-shadow: 0 4px 10px rgba(211, 47, 47, 0.3);
-      }
-      50% {
-        background-color: #f44336;
-        box-shadow: 0 4px 20px rgba(244, 67, 54, 0.6);
-      }
-      100% {
-        background-color: #d32f2f;
-        box-shadow: 0 4px 10px rgba(211, 47, 47, 0.3);
-      }
-    }
+   /* 💡 改良：暗さの下限を下げて明暗差を強調した蛍点滅 */
+@keyframes hotaru-blink {
+  0% {
+    background-color: #d32f2f;
+    box-shadow: 0 4px 10px rgba(211, 47, 47, 0.4);
+  }
+  50% {
+    /* 中間地点でしっかり明度を上げ、影を大きく拡散 */
+    background-color: #ff4d4d;
+    box-shadow: 0 4px 25px rgba(255, 77, 77, 0.8);
+  }
+  100% {
+    /* 下限の調整：背景色を少し沈ませ、影の透明度をほぼゼロ（0.05）まで落とす */
+    background-color: #a02020;
+    box-shadow: 0 4px 10px rgba(160, 32, 32, 0.05);
+  }
+}
 
     /* カートあり（注文確定時）：点滅アニメーションを適用 */
     .dynamic-action-btn.state-checkout {
@@ -596,7 +598,7 @@
       
       if (totalQty > 0) {
         // カートに商品あり ➔ 注文確定ボタンに変更（CSSで自動的に蛍点滅がONになります）
-        btn.innerText = `🔥 注文を確定する\n(計 ${totalQty} 点)`;
+        btn.innerText = `注文を確定する\n(計 ${totalQty} 点)`;
         btn.className = "dynamic-action-btn state-checkout";
       } else {
         // カートが空 ➔ 履歴確認ボタンに変更（点滅はOFF）
