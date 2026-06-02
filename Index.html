@@ -177,7 +177,7 @@
     .add-cart-btn { width: 100%; background-color: #fff; border: 1px solid #d32f2f; color: #d32f2f; padding: 6px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; cursor: pointer; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; -webkit-tap-highlight-color: transparent; }
     .add-cart-btn.has-option { background-color: #fff8f8; border-color: #d32f2f; color: #d32f2f; }
 
-    /* 下部固定注文バー */
+    /* 🛠️ 改良：下部固定バーを3ボタン構成にして、中央に履歴ボタンを配置 */
     .cart-bar { 
       flex-shrink: 0; 
       width: 100%; 
@@ -186,6 +186,7 @@
       padding: 12px 10px 16px 10px; 
       box-sizing: border-box; 
       display: flex; 
+      gap: 8px;
       justify-content: space-between; 
       align-items: center; 
       z-index: 100; 
@@ -193,20 +194,33 @@
     }
     
     .cart-info-btn { 
+      flex: 1;
       background: #f5f5f5; border: 1px solid #ccc; 
-      padding: 6px 8px; 
+      padding: 10px 4px; 
       border-radius: 20px; 
-      font-size: 0.78rem; 
-      color: #333; cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; gap: 2px; 
-      white-space: nowrap; 
+      font-size: 0.75rem; 
+      color: #333; cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent;
+      text-align: center;
     }
     .cart-info-btn:active { background: #e0e0e0; }
 
+    /* 🛠️ 追加：注文履歴ボタンのスタイル */
+    .history-info-btn {
+      flex: 1;
+      background: #fff; border: 1px solid #b89c66;
+      color: #b89c66; padding: 10px 4px;
+      border-radius: 20px; font-size: 0.75rem;
+      cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent;
+      text-align: center;
+    }
+    .history-info-btn:active { background: #fcfaf2; }
+
     .checkout-btn { 
+      flex: 1.2;
       background-color: #d32f2f; color: white; border: none; 
-      padding: 12px 12px; 
+      padding: 12px 4px; 
       border-radius: 4px; font-weight: bold; 
-      font-size: 0.88rem; 
+      font-size: 0.85rem; 
       cursor: pointer; box-shadow: 0 4px 8px rgba(211, 47, 47, 0.3); -webkit-tap-highlight-color: transparent; 
       white-space: nowrap; 
     }
@@ -226,6 +240,12 @@
       box-shadow: 0 10px 25px rgba(0,0,0,0.2);
       border: 2px solid #d32f2f;
     }
+    
+    /* 🛠️ 注文履歴用モーダルは少しシックな色合いに */
+    .modal-content.history-style {
+      border-color: #b89c66;
+    }
+    
     .modal-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 20px; color: #1a252c; border-bottom: 1px solid #e0dacf; padding-bottom: 8px; }
     
     .modal-submit-btn {
@@ -242,6 +262,8 @@
     .option-item { display: flex; align-items: center; padding: 12px 16px; background: #fff; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; color: #333; }
     .option-item input { margin-right: 12px; transform: scale(1.2); }
     .option-item.selected { border-color: #d32f2f; background-color: #fff8f8; color: #d32f2f; }
+    
+    /* リストコンテナ共通 */
     .cart-list-container { max-height: 260px; overflow-y: auto; text-align: left; margin-bottom: 15px; }
     .cart-item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed #c8bfae; }
     .cart-item-info { flex-grow: 1; padding-right: 8px; }
@@ -251,7 +273,7 @@
     .cart-qty-btn { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
     .cart-qty-display { font-weight: bold; width: 22px; text-align: center; font-size: 1rem; color: #111; }
 
-    /* 🛠️ 改良：優しく品のある和モダンなスタイル案内画面 */
+    /* スタイル案内画面 */
     .welcome-container {
       max-width: 450px; margin: 30px auto; padding: 25px 20px; text-align: center; color: #222222; font-family: 'Hiragino Mincho ProN', 'MS Mincho', serif;
     }
@@ -284,7 +306,7 @@
         <div>🍻 乾杯: <span id="display-start-time" class="time-highlight">--:--</span></div>
       </div>
       <div>
-        <button id="share-qr-nav-btn" class="qr-share-btn" onclick="openQrModal()" style="display: none;">📱 自分のスマホで注文</button>
+        <button id="share-qr-nav-btn" class="qr-share-btn" onclick="openQrModal()" style="display: none;">📱 スマホ連携</button>
       </div>
     </div>
 
@@ -296,14 +318,18 @@
   
   <div class="cart-bar">
     <button class="cart-info-btn" onclick="openCartListModal()">
-      📋 選択中: <span id="cart-count" style="color: #d32f2f; font-size: 1rem;">0</span> 点 (確認/修正)
+      📋 選択中<br><span id="cart-count" style="color: #d32f2f; font-size: 0.95rem; font-weight: bold;">0</span> 点
     </button>
-    <button id="checkout-btn" class="checkout-btn" onclick="openOrderModal()" disabled>注文を確定する</button>
+    
+    <button class="history-info-btn" onclick="openHistoryModal()">
+      📜 注文履歴<br><span id="history-count" style="font-size: 0.95rem; font-weight: bold;">0</span> 点
+    </button>
+    
+    <button id="checkout-btn" class="checkout-btn" onclick="openOrderModal()" disabled>注文を<br>確定する</button>
   </div>
 
   <div id="customer-modal" class="modal-overlay" style="display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #f4efe8; z-index: 10000; overflow-y: auto;">
     <div class="welcome-container">
-      
       <h2 style="font-size: 22px; margin-bottom: 5px; color: #1a252c; font-weight: bold; letter-spacing: 1px;">いらっしゃいませ</h2>
       <p style="font-size: 13px; color: #666666; margin-bottom: 25px; font-family: sans-serif;">ご来店ありがとうございます</p>
       
@@ -339,7 +365,6 @@
       <button onclick="submitModalQty()" style="width: 80%; max-width: 250px; padding: 14px; font-size: 16px; font-weight: bold; background-color: #d32f2f; color: #ffffff; border: none; border-radius: 4px; cursor: pointer; box-shadow: 0 4px 10px rgba(211,47,47,0.2); font-family: 'Hiragino Kaku Gothic ProN', sans-serif; -webkit-tap-highlight-color: transparent;">
         お品書きを見る
       </button>
-      
     </div>
   </div>
 
@@ -373,6 +398,14 @@
     </div>
   </div>
 
+  <div id="history-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content history-style">
+      <div class="modal-title" style="color: #b89c66; border-bottom: 1px solid #d6cebf;">これまでの注文履歴</div>
+      <div id="history-list-items" class="cart-list-container"></div>
+      <button class="modal-submit-btn" style="background-color: #b89c66;" onclick="closeHistoryModal()">閉じる</button>
+    </div>
+  </div>
+
   <div id="order-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <div class="modal-title" style="margin-bottom: 10px;">注文を確定しますか？</div>
@@ -393,7 +426,7 @@
   </div>
 
   <script>
-    // 🛠️ AndroidのChrome等で「ホーム画面に追加」した際に完全全画面（PWA）にするためのマニフェスト動的生成
+    // PWA用マニフェスト動的生成
     (function() {
       const manifest = {
         "short_name": "モバイルオーダー",
@@ -425,11 +458,11 @@
     document.getElementById('display-table-id').innerText = tableId;
 
     let allMenus = [], categoryList = [], cart = [];
+    let orderHistory = []; // 🛠️ 送信成功した履歴を保存する配列
+    
     let isTabClicking = false;
     let clickTimeout;
-    
     let finalStartTime = '--:--';
-
     let currentOptionItem = null;
     let currentOptionQtyId = null;
 
@@ -471,20 +504,19 @@
     function openSuccessModal() { document.getElementById('success-modal').style.display = 'flex'; }
     function closeSuccessModal() { document.getElementById('success-modal').style.display = 'none'; }
 
+    // カートモーダル
     function openCartListModal() {
       const container = document.getElementById('cart-list-items');
       container.innerHTML = '';
       if (cart.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#888; padding:20px 0;">カートは空っぽです。</p>';
+        container.innerHTML = '<p style="text-align:center; color:#888; padding:20px 0;">選択中のメニューはありません。</p>';
         document.getElementById('cart-list-modal').style.display = 'flex';
         return;
       }
       cart.forEach((item, index) => {
         const row = document.createElement('div');
         row.className = 'cart-item-row';
-        
         const displayName = item.name.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '');
-        
         row.innerHTML = `
           <div class="cart-item-info">
             <div class="cart-item-name">${displayName}</div>
@@ -500,8 +532,36 @@
       });
       document.getElementById('cart-list-modal').style.display = 'flex';
     }
-
     function closeCartListModal() { document.getElementById('cart-list-modal').style.display = 'none'; }
+
+    // 🛠️ 追加：注文履歴モーダルを開く処理
+    function openHistoryModal() {
+      const container = document.getElementById('history-list-items');
+      container.innerHTML = '';
+      if (orderHistory.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#888; padding:20px 0;">まだ注文履歴はありません。<br>確定した注文がここに表示されます。</p>';
+        document.getElementById('history-modal').style.display = 'flex';
+        return;
+      }
+      
+      orderHistory.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'cart-item-row';
+        const displayName = item.name.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '');
+        row.innerHTML = `
+          <div class="cart-item-info">
+            <div class="cart-item-name" style="color: #555;">${displayName}</div>
+            <div class="cart-item-price-label">送信済</div>
+          </div>
+          <div style="font-weight: bold; font-size: 1.1rem; padding-right: 10px; color: #333;">
+            ${item.quantity} 点
+          </div>
+        `;
+        container.appendChild(row);
+      });
+      document.getElementById('history-modal').style.display = 'flex';
+    }
+    function closeHistoryModal() { document.getElementById('history-modal').style.display = 'none'; }
 
     function updateCartItemQty(index, amt) {
       cart[index].quantity += amt;
@@ -516,6 +576,13 @@
       document.getElementById('checkout-btn').disabled = (totalQty === 0);
     }
 
+    // 🛠️ 追加：履歴の合計バッジを更新する処理
+    function updateHistoryTotalCount() {
+      const totalHistoryQty = orderHistory.reduce((sum, i) => sum + i.quantity, 0);
+      document.getElementById('history-count').innerText = totalHistoryQty;
+    }
+
+    // オプション処理
     function openOptionModal(menuId, qtyId) {
       const item = allMenus.find(m => m.menu_id == menuId);
       if (!item) return;
@@ -549,7 +616,6 @@
       if (!selectedRadio) return;
       const choice = selectedRadio.value;
       const q = parseInt(document.getElementById(currentOptionQtyId).innerText);
-      
       const originalName = currentOptionItem.name.trim();
       const fullName = `${originalName}(${choice})`;
       
@@ -559,6 +625,7 @@
       closeOptionModal();
     }
 
+    // 注文送信
     async function executeOrderSubmit() {
       closeOrderModal();
       document.getElementById('checkout-btn').disabled = true;
@@ -569,8 +636,21 @@
         params.append('cart', JSON.stringify(cart));
         const response = await fetch(GAS_URL, { method: 'POST', body: params, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
         const result = await response.json();
+        
         if (result.status === 'success') {
             openSuccessModal();
+            
+            // 🛠️ 改良：送信に成功したカートの中身を「履歴配列」にマージ
+            cart.forEach(cartItem => {
+              const ex = orderHistory.find(h => h.name === cartItem.name);
+              if (ex) {
+                ex.quantity += cartItem.quantity;
+              } else {
+                orderHistory.push({ ...cartItem });
+              }
+            });
+            updateHistoryTotalCount(); // 履歴バッジを更新
+            
             cart = []; 
             document.getElementById('cart-count').innerText = '0';
             document.getElementById('checkout-btn').disabled = true;
@@ -599,7 +679,6 @@
           document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active');
           const tabContainer = document.getElementById('tab-container'); tabContainer.scrollLeft = btn.offsetLeft - (tabContainer.clientWidth / 2) + (btn.clientWidth / 2);
           const targetPage = document.getElementById('page-' + i); 
-          
           if(targetPage) { 
             document.getElementById('swipe-view').scrollLeft = targetPage.offsetLeft; 
             targetPage.scrollTop = 0;
@@ -651,7 +730,6 @@
 
     function initSwipeListener() {
       const swipeView = document.getElementById('swipe-view');
-      
       swipeView.addEventListener('scroll', () => {
         if (isTabClicking) return;
         const width = swipeView.clientWidth; const scrollLeft = swipeView.scrollLeft; const currentIdx = Math.round(scrollLeft / width);
@@ -662,17 +740,12 @@
           tabContainer.scrollTo({ left: targetLeft, behavior: 'smooth' });
         }
       });
-
       swipeView.addEventListener('scrollend', () => {
         const width = swipeView.clientWidth;
         const currentIdx = Math.round(swipeView.scrollLeft / width);
-        
         document.querySelectorAll('.category-page').forEach((page, idx) => {
-          if (idx !== currentIdx) {
-            page.scrollTop = 0; 
-          }
+          if (idx !== currentIdx) { page.scrollTop = 0; }
         });
-        
         const activePage = document.getElementById('page-' + currentIdx);
         if (activePage) { activePage.scrollTop = 0; }
       });
