@@ -218,19 +218,20 @@
       transition: background-color 0.2s, color 0.2s;
     }
 
-   /* 💡 改良：暗さの下限を下げて明暗差を強調した蛍点滅 */
+ /* 💡 修正：0%と100%を同じ「暗い状態」にしてループの継ぎ目を滑らかに */
 @keyframes hotaru-blink {
   0% {
-    background-color: #d32f2f;
-    box-shadow: 0 4px 10px rgba(211, 47, 47, 0.4);
+    /* スタート：しっかり沈んだ深い赤（影もほぼ消す） */
+    background-color: #a02020;
+    box-shadow: 0 4px 10px rgba(160, 32, 32, 0.05);
   }
   50% {
-    /* 中間地点でしっかり明度を上げ、影を大きく拡散 */
+    /* 中間：最大出力でパッと明るく（影も大きく拡散） */
     background-color: #ff4d4d;
     box-shadow: 0 4px 25px rgba(255, 77, 77, 0.8);
   }
   100% {
-    /* 下限の調整：背景色を少し沈ませ、影の透明度をほぼゼロ（0.05）まで落とす */
+    /* エンド：0%と完全に同じ状態に戻る */
     background-color: #a02020;
     box-shadow: 0 4px 10px rgba(160, 32, 32, 0.05);
   }
