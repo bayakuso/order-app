@@ -2,14 +2,15 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-color=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  
+
   <title>客席モバイルオーダー</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
   <style>
     /* 画面高さを動的に制御（スクロール不具合対策） */
     html, body {
@@ -18,25 +19,17 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
-    }
-    
-    body { 
-      font-family: 'Hiragino Mincho ProN', 'MS Mincho', serif; 
-      background-color: #f4efe8; 
-      color: #222; 
-      display: flex;
-      flex-direction: column; 
-    }
-    
-    /* 上部固定パーツ（ヘッダー・タブ） */
-    .header-fixed-area {
-      flex-shrink: 0;
+      font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Mincho ProN', 'MS Mincho', Meiryo, sans-serif;
       background-color: #f4efe8;
-      z-index: 10;
+      color: #222;
+      display: flex;
+      flex-direction: column;
     }
-    
-    h1 { text-align: center; font-size: 1.3rem; margin: 12px 0 5px 0; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
-    
+
+    /* 上部固定パーツ */
+    .header-fixed-area { flex-shrink: 0; background-color: #f4efe8; z-index: 10; }
+    h1 { text-align: center; font-size: 1.32rem; margin: 12px 0 5px 0; font-weight: bold; letter-spacing: 1px; }
+
     .status-bar {
       background-color: #1a252c;
       color: white;
@@ -46,218 +39,196 @@
       justify-content: space-between;
       align-items: center;
       font-weight: bold;
-      font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
     }
     .status-left { display: flex; gap: 15px; align-items: center; }
-    .status-bar .time-highlight { color: #ff5252; }
+    .time-highlight { color: #ff5252; }
+
     .qr-share-btn {
       background-color: #d32f2f; color: white; border: none;
-      padding: 4px 10px; border-radius: 4px; font-size: 0.75rem;
+      padding: 5px 11px; border-radius: 4px; font-size: 0.76rem;
       cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent;
     }
 
     /* カテゴリタブ */
-    .tab-wrapper { 
-      background-color: #f4efe8; 
-      padding: 6px 16px 10px 16px; 
-      border-bottom: 2px solid #d32f2f; 
+    .tab-wrapper {
+      background-color: #f4efe8;
+      padding: 6px 16px 10px 16px;
+      border-bottom: 2px solid #d32f2f;
     }
-    .tab-container { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
+    .tab-container { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .tab-container::-webkit-scrollbar { display: none; }
-    .category-tab { padding: 6px 16px; background-color: #fff; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; white-space: nowrap; font-weight: bold; font-size: 0.9rem; color: #555; }
+    .category-tab {
+      padding: 7px 16px; background-color: #fff; border: 1px solid #ccc;
+      border-radius: 4px; cursor: pointer; white-space: nowrap;
+      font-weight: bold; font-size: 0.9rem; color: #555;
+    }
     .category-tab.active { background-color: #d32f2f; color: white; border-color: #d32f2f; }
-    
+
     /* メニュー表示コンテナ */
-    .swipe-view-container { 
-      display: flex; 
-      overflow-x: auto; 
-      scroll-snap-type: x mandatory; 
-      -webkit-overflow-scrolling: touch; 
-      scrollbar-width: none; 
-      flex-grow: 1;           
-      overflow-y: hidden;     
+    .swipe-view-container {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      flex-grow: 1;
+      overflow-y: hidden;
     }
     .swipe-view-container::-webkit-scrollbar { display: none; }
-    
+
     /* 各カテゴリーページ */
-    .category-page { 
-      min-width: 100vw; 
+    .category-page {
+      min-width: 100vw;
       max-width: 100vw;
       height: 100%;
-      box-sizing: border-box; 
-      scroll-snap-align: start; 
-      padding: 16px; 
-      overflow-y: auto;       
+      box-sizing: border-box;
+      scroll-snap-align: start;
+      padding: 16px;
+      overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
-    
-    .menu-grid { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); 
-      gap: 16px; 
-      padding-bottom: 40px; 
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+      gap: 16px;
+      padding-bottom: 40px;
     }
-    
+
     /* 短冊風メニューカード */
-    .menu-card { 
-      background: #fcfaf2; 
-      border-radius: 4px; 
-      overflow: hidden; 
-      box-shadow: 2px 2px 8px rgba(0,0,0,0.08); 
+    .menu-card {
+      background: #fcfaf2;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.08);
       border-left: 1px solid #e0dacf;
       border-right: 2px solid #c8bfae;
       border-bottom: 3px solid #c8bfae;
-      display: flex; 
-      flex-direction: column; 
-      position: relative; 
+      display: flex;
+      flex-direction: column;
       container-type: inline-size;
     }
-    
-    /* 写真エリア */
-    .menu-img-wrapper { 
-      width: 100%; 
-      aspect-ratio: 16 / 9; 
-      background-color: #eae5da; 
-      position: relative; 
-      border-bottom: 1px dashed #c8bfae; 
+
+    .menu-img-wrapper {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #eae5da;
+      position: relative;
+      border-bottom: 1px dashed #c8bfae;
       overflow: hidden;
     }
     .menu-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(8%); }
-    .no-img-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #baae9e; font-size: 0.75rem; font-family: sans-serif; }
-    
-    .menu-card-body { 
-      padding: 10px 8px 8px 8px; 
-      display: flex; 
-      flex-direction: column; 
-      justify-content: space-between; 
-      flex-grow: 1; 
-    }
+    .no-img-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #baae9e; font-size: 0.75rem; }
 
-    /* 高さを一律120pxに完全固定 */
+    .menu-card-body { padding: 10px 8px 8px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
+
+    /* 高さを110pxに完全固定（ガタつき排除、溢れたら内スクロール） */
     .vertical-text-area {
       writing-mode: vertical-rl;
       text-orientation: mixed;
-      height: 120px; 
+      height: 110px;
       display: flex;
-      justify-content: flex-start;
+      align-items: flex-start;
       width: 100%;
       box-sizing: border-box;
       padding-right: 4px;
-      overflow: visible; 
+      overflow: auto;
     }
-    
-    .menu-name-single { 
-      font-weight: bold; 
-      font-size: clamp(9px, 7.5cqi, 18px); 
-      line-height: 1.1;
-      letter-spacing: 0.5px;
+
+    .menu-name-single {
+      font-weight: bold;
+      font-size: clamp(10px, 7.8cqi, 18px);
+      line-height: 1.15;
       color: #111;
-      white-space: nowrap; 
-      margin: 0;
+      white-space: nowrap;
     }
-
-    .menu-name-multi { 
-      font-weight: bold; 
-      font-size: 16px;       
-      line-height: 1.3;      
-      letter-spacing: 0.5px; 
+    .menu-name-multi {
+      font-weight: bold;
+      font-size: 15.5px;
+      line-height: 1.25;
       color: #111;
-      white-space: pre-wrap; 
-      margin: 0;
+      white-space: pre-wrap;
     }
 
-    /* 料金エリア */
-    .price-area { width: 100%; text-align: left; padding-left: 4px; margin-top: 8px; }
-    .menu-price { color: #1a252c; font-weight: bold; font-size: 1rem; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
+    .price-area { padding-left: 4px; margin-top: 8px; }
+    .menu-price { color: #1a252c; font-weight: bold; font-size: 1.02rem; }
 
-    /* 操作エリア */
-    .qty-area { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 6px 0; font-family: sans-serif; }
-    .qty-btn { width: 28px; height: 28px; border-radius: 4px; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
-    
-    .add-cart-btn { width: 100%; background-color: #fff; border: 1px solid #d32f2f; color: #d32f2f; padding: 6px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; cursor: pointer; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; -webkit-tap-highlight-color: transparent; }
-    .add-cart-btn.has-option { background-color: #fff8f8; border-color: #d32f2f; color: #d32f2f; }
+    .qty-area { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 6px 0; }
+    .qty-btn {
+      width: 28px; height: 28px; border-radius: 4px; border: 1px solid #ccc;
+      background: #fff; font-weight: bold; font-size: 1.15rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .add-cart-btn {
+      width: 100%; background-color: #fff; border: 1px solid #d32f2f;
+      color: #d32f2f; padding: 7px; border-radius: 4px;
+      font-weight: bold; font-size: 0.86rem; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .add-cart-btn.has-option { background-color: #fff8f8; }
 
     /* 下部固定バー */
-    .cart-bar { 
-      flex-shrink: 0; 
-      width: 100%; 
-      background-color: #fff; 
-      box-shadow: 0 -4px 10px rgba(0,0,0,0.1); 
-      padding: 12px 16px 16px 16px; 
-      box-sizing: border-box; 
-      display: flex; 
+    .cart-bar {
+      flex-shrink: 0;
+      background-color: #fff;
+      box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+      padding: 12px 16px 16px;
+      display: flex;
       gap: 12px;
-      justify-content: space-between; 
-      align-items: center; 
-      z-index: 100; 
-      font-family: 'Hiragino Kaku Gothic ProN', sans-serif; 
+      z-index: 100;
     }
-    
-    /* 左側：カート確認ボタン */
-    .cart-info-btn { 
-      flex: 1;
-      background: #f5f5f5; border: 1px solid #ccc; 
-      padding: 12px 4px; 
-      border-radius: 4px; 
-      font-size: 0.85rem; 
-      color: #333; cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent;
+
+    .cart-info-btn, .dynamic-action-btn {
+      padding: 12px 4px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 0.88rem;
+      cursor: pointer;
       text-align: center;
+      -webkit-tap-highlight-color: transparent;
     }
-    .cart-info-btn:active { background: #e0e0e0; }
+    .cart-info-btn { flex: 1; background: #f5f5f5; border: 1px solid #ccc; color: #333; }
 
-    /* 右側：可変アクションボタン（注文確定 or 履歴確認） */
-    .dynamic-action-btn { 
-      flex: 1.5;
-      border: none; 
-      padding: 12px 4px; 
-      border-radius: 4px; font-weight: bold; 
-      font-size: 0.88rem; 
-      cursor: pointer; -webkit-tap-highlight-color: transparent; 
-      white-space: nowrap; 
-      text-align: center;
-      transition: background-color 0.2s, color 0.2s;
+    /* なめらかでメリハリのある蛍点滅 */
+    @keyframes hotaru-blink {
+      0%, 100% { background-color: #a02020; box-shadow: 0 4px 10px rgba(160,32,32,0.05); }
+      50% { background-color: #ff4d4d; box-shadow: 0 4px 25px rgba(255,77,77,0.85); }
     }
 
- /* 💡 修正：0%と100%を同じ「暗い状態」にしてループの継ぎ目を滑らかに */
-@keyframes hotaru-blink {
-  0% {
-    /* スタート：しっかり沈んだ深い赤（影もほぼ消す） */
-    background-color: #a02020;
-    box-shadow: 0 4px 10px rgba(160, 32, 32, 0.05);
-  }
-  50% {
-    /* 中間：最大出力でパッと明るく（影も大きく拡散） */
-    background-color: #ff4d4d;
-    box-shadow: 0 4px 25px rgba(255, 77, 77, 0.8);
-  }
-  100% {
-    /* エンド：0%と完全に同じ状態に戻る */
-    background-color: #a02020;
-    box-shadow: 0 4px 10px rgba(160, 32, 32, 0.05);
-  }
-}
-
-    /* カートあり（注文確定時）：点滅アニメーションを適用 */
     .dynamic-action-btn.state-checkout {
+      flex: 1.5;
       background-color: #d32f2f; color: white;
-      animation: hotaru-blink 3s ease-in-out infinite;
+      border: none;
+      animation: hotaru-blink 2.7s ease-in-out infinite;
     }
-
-    /* カート空（履歴確認時）：アニメーションをオフにして落ち着いたデザインに */
     .dynamic-action-btn.state-history {
+      flex: 1.5;
       background-color: #fff; color: #b89c66;
       border: 2px solid #b89c66;
-      box-shadow: none;
       animation: none;
+      box-shadow: none;
     }
 
-    /* モーダル各種 */
+    /* トースト通知 */
+    #toast {
+      position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%);
+      background: rgba(26,37,44,0.92); color: white; padding: 13px 26px;
+      border-radius: 999px; font-size: 0.96rem; font-weight: bold;
+      opacity: 0; transition: all 0.35s ease; z-index: 3000; white-space: nowrap;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(-12px); }
+
+    /* モーダル共通ベース */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background-color: rgba(0,0,0,0.6);
+      background-color: rgba(0,0,0,0.65);
       display: flex; justify-content: center; align-items: center;
       z-index: 1000;
-      font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
     }
     .modal-content {
       background-color: #fcfaf2; padding: 24px; border-radius: 12px;
@@ -265,9 +236,8 @@
       box-shadow: 0 10px 25px rgba(0,0,0,0.2);
       border: 2px solid #d32f2f;
     }
-    
     .modal-content.history-style { border-color: #b89c66; }
-    .modal-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 20px; color: #1a252c; border-bottom: 1px solid #e0dacf; padding-bottom: 8px; }
+    .modal-title { font-size: 1.12rem; font-weight: bold; margin-bottom: 20px; color: #1a252c; border-bottom: 1px solid #e0dacf; padding-bottom: 8px; }
     
     .modal-submit-btn {
       width: 100%; background-color: #d32f2f; color: white; border: none;
@@ -289,32 +259,18 @@
     .cart-item-info { flex-grow: 1; padding-right: 8px; }
     .cart-item-name { font-weight: bold; font-size: 0.95rem; color: #111; }
     .cart-item-price-label { font-size: 0.8rem; color: #666; margin-top: 2px; }
-    .cart-qty-area { display: flex; justify-content: center; align-items: center; gap: 8px; font-family: sans-serif; }
-    .cart-qty-btn { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+    .cart-qty-area { display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .cart-qty-btn { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .cart-qty-display { font-weight: bold; width: 22px; text-align: center; font-size: 1rem; color: #111; }
 
-    /* スタイル案内画面 */
-    .welcome-container {
-      max-width: 450px; margin: 30px auto; padding: 25px 20px; text-align: center; color: #222222; font-family: 'Hiragino Mincho ProN', 'MS Mincho', serif;
-    }
-    .announcement-box {
-      background-color: #fcfaf2; border: 1px solid #d6cebf; border-top: 4px solid #b89c66; border-radius: 6px; padding: 25px 18px; margin-bottom: 35px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    }
-    .announcement-badge {
-      display: inline-block; background-color: #b89c66; color: #fff; font-size: 11px; font-weight: bold; padding: 3px 10px; border-radius: 20px; margin-bottom: 15px; letter-spacing: 1px; font-family: sans-serif;
-    }
-    .announcement-price {
-      font-size: 20px; font-weight: bold; color: #1a252c; margin-bottom: 15px; font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
-    }
-    .announcement-text {
-      font-size: 14px; color: #444444; line-height: 1.6; margin: 0; text-align: left; padding: 0 5px;
-    }
-    .guest-select-wrapper {
-      position: relative; max-width: 180px; margin: 0 auto;
-    }
-    .guest-select {
-      width: 100%; padding: 12px 15px; font-size: 18px; font-weight: bold; background-color: #ffffff; color: #222222; border: 2px solid #b89c66; border-radius: 6px; appearance: none; cursor: pointer; text-align: center; font-family: sans-serif;
-    }
+    /* 初期案内スタイル */
+    .welcome-container { max-width: 450px; margin: 30px auto; padding: 25px 20px; text-align: center; color: #222222; }
+    .announcement-box { background-color: #fcfaf2; border: 1px solid #d6cebf; border-top: 4px solid #b89c66; border-radius: 6px; padding: 25px 18px; margin-bottom: 35px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .announcement-badge { display: inline-block; background-color: #b89c66; color: #fff; font-size: 11px; font-weight: bold; padding: 3px 10px; border-radius: 20px; margin-bottom: 15px; letter-spacing: 1px; }
+    .announcement-price { font-size: 20px; font-weight: bold; color: #1a252c; margin-bottom: 15px; }
+    .announcement-text { font-size: 14px; color: #444444; line-height: 1.6; margin: 0; text-align: left; padding: 0 5px; }
+    .guest-select-wrapper { position: relative; max-width: 180px; margin: 0 auto; }
+    .guest-select { width: 100%; padding: 12px 15px; font-size: 18px; font-weight: bold; background-color: #ffffff; color: #222222; border: 2px solid #b89c66; border-radius: 6px; appearance: none; cursor: pointer; text-align: center; }
   </style>
 </head>
 <body>
@@ -325,75 +281,63 @@
         <div>👥 人数: <span id="display-customer-count">-</span> 名様</div>
         <div>🍻 乾杯: <span id="display-start-time" class="time-highlight">--:--</span></div>
       </div>
-      <div>
-        <button id="share-qr-nav-btn" class="qr-share-btn" onclick="openQrModal()" style="display: none;">📱 スマホ連携</button>
-      </div>
+      <button id="share-qr-nav-btn" class="qr-share-btn" onclick="openQrModal()" style="display: none;">📱 スマホ連携</button>
     </div>
-
-    <h1 style="font-weight: bold; letter-spacing: 1px;">お品書き（卓番号: <span id="display-table-id">-</span>）</h1>
+    <h1>お品書き（卓番号: <span id="display-table-id">-</span>）</h1>
     <div class="tab-wrapper"><div id="tab-container" class="tab-container"></div></div>
   </div>
 
-  <div id="swipe-view" class="swipe-view-container"><p style="text-align: center; color: #999; width: 100vw; padding: 20px;">メニューを読み込み中...</p></div>
-  
-  <div class="cart-bar">
-    <button class="cart-info-btn" onclick="openCartListModal()">
-      📋 選択中の品<br><span id="cart-count" style="color: #d32f2f; font-size: 0.95rem;">0</span> 点
-    </button>
-    
-    <button id="dynamic-btn" class="dynamic-action-btn state-history" onclick="handleDynamicBtnClick()">
-      📜 注文履歴を確認
-    </button>
+  <div id="swipe-view" class="swipe-view-container">
+    <p style="text-align:center;color:#999;width:100vw;padding:40px 20px;">メニューを読み込み中...</p>
   </div>
 
-  <div id="customer-modal" class="modal-overlay" style="display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #f4efe8; z-index: 10000; overflow-y: auto;">
+  <div class="cart-bar">
+    <button class="cart-info-btn" onclick="openCartListModal()">📋 選択中の品<br><span id="cart-count" style="color:#d32f2f;">0</span> 点</button>
+    <button id="dynamic-btn" class="dynamic-action-btn state-history" onclick="handleDynamicBtnClick()">📜 注文履歴を確認</button>
+  </div>
+
+  <div id="customer-modal" class="modal-overlay" style="display: block; background:#f4efe8; z-index:10000; overflow-y: auto;">
     <div class="welcome-container">
-      <h2 style="font-size: 22px; margin-bottom: 5px; color: #1a252c; font-weight: bold; letter-spacing: 1px;">いらっしゃいませ</h2>
-      <p style="font-size: 13px; color: #666666; margin-bottom: 25px; font-family: sans-serif;">ご来店ありがとうございます</p>
-      
+      <h2 style="font-size:22px;margin-bottom:5px;color:#1a252c;font-weight:bold;letter-spacing:1px;">いらっしゃいませ</h2>
+      <p style="font-size:13px;color:#666;margin-bottom:25px;">ご来店ありがとうございます</p>
+
       <div class="announcement-box">
         <span class="announcement-badge">当店のスタイル</span>
-        <h3 style="font-size: 18px; margin: 0 0 12px 0; color: #b89c66; font-weight: bold;">おつまみ三品盛り</h3>
+        <h3 style="font-size:18px;margin:0 0 12px 0;color:#b89c66;font-weight:bold;">おつまみ三品盛り</h3>
         <div class="announcement-price">
-          お一人様 <span style="font-size: 30px; color: #d32f2f;">1,000</span> 円 <span style="font-size: 14px; color: #555555; font-weight: normal;">(お席料込・税込)</span>
+          お一人様 <span style="font-size:30px;color:#d32f2f;">1,000</span> 円 <span style="font-size:14px;color:#555;font-weight:normal;">(お席料込・税込)</span>
         </div>
         <p class="announcement-text">
-          当店では、最初にお酒が引き立つ店主特製の<strong>「季節のおつまみ三品」</strong>を皆様にご提供しております。<br>
-          <span style="font-size:12px; color:#666;">※美味しいお酒と共に、最初にお召し上がりください。</span>
+          当店では、最初にお酒が引き立つ店主特製の<strong>「季節のおつまみ三品」</strong>を皆様にご提供しております。
         </p>
       </div>
-      
-      <div style="margin-bottom: 35px;">
-        <label style="display: block; font-size: 14px; color: #333333; margin-bottom: 12px; font-weight: bold; font-family: 'Hiragino Kaku Gothic ProN', sans-serif;">■ ご来店人数を選択してください</label>
+
+      <div style="margin-bottom:35px;">
+        <label style="display:block;font-size:14px;color:#333;margin-bottom:12px;font-weight:bold;">■ ご来店人数を選択してください</label>
         <div class="guest-select-wrapper">
           <select id="modal-guest-count" class="guest-select">
-            <option value="1">1 名</option>
-            <option value="2">2 名</option>
-            <option value="3">3 名</option>
-            <option value="4">4 名</option>
-            <option value="5">5 名</option>
-            <option value="6">6 名</option>
-            <option value="7">7 名</option>
-            <option value="8">8 名</option>
+            <option value="1">1 名</option><option value="2">2 名</option><option value="3">3 名</option>
+            <option value="4">4 名</option><option value="5">5 名</option><option value="6">6 名</option>
+            <option value="7">7 名</option><option value="8">8 名</option>
           </select>
           <div style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #b89c66; pointer-events: none;">▼</div>
         </div>
       </div>
-      
-      <button onclick="submitModalQty()" style="width: 80%; max-width: 250px; padding: 14px; font-size: 16px; font-weight: bold; background-color: #d32f2f; color: #ffffff; border: none; border-radius: 4px; cursor: pointer; box-shadow: 0 4px 10px rgba(211,47,47,0.2); font-family: 'Hiragino Kaku Gothic ProN', sans-serif; -webkit-tap-highlight-color: transparent;">
+
+      <button onclick="submitModalQty()" style="width:80%;max-width:250px;padding:14px;font-size:16px;font-weight:bold;background:#d32f2f;color:white;border:none;border-radius:4px;box-shadow:0 4px 10px rgba(211,47,47,0.2);">
         お品書きを見る
       </button>
     </div>
   </div>
 
-  <div id="qr-modal" class="modal-overlay" style="display: none;">
+  <div id="qr-modal" class="modal-overlay" style="display:none;">
     <div class="modal-content">
-      <div class="modal-title" style="margin-bottom: 10px;">自分のスマホで注文</div>
-      <p style="color: #666; font-size: 0.85rem; margin-bottom: 15px;">QRコードを読み取ると、この卓のメニューを手元で開けます。</p>
-      <div style="background: white; padding: 10px; display: inline-block; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+      <div class="modal-title">自分のスマホで注文</div>
+      <p style="color:#666;font-size:0.85rem;margin-bottom:15px;">QRコードを読み取るとこの卓のメニューが開けます</p>
+      <div style="background:white;padding:12px;display:inline-block;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
         <canvas id="qr-canvas"></canvas>
       </div>
-      <button class="modal-submit-btn" style="margin-top: 20px; background-color: #546e7a;" onclick="closeQrModal()">閉じる</button>
+      <button onclick="closeQrModal()" style="margin-top:20px;width:100%;padding:12px;background:#546e7a;color:white;border:none;border-radius:4px;">閉じる</button>
     </div>
   </div>
 
@@ -443,96 +387,86 @@
     </div>
   </div>
 
-  <script>
-    // PWA用マニフェスト動的生成
-    (function() {
-      const manifest = {
-        "short_name": "モバイルオーダー",
-        "name": "客席モバイルオーダー",
-        "start_url": window.location.href,
-        "display": "standalone",
-        "orientation": "portrait",
-        "background_color": "#f4efe8",
-        "theme_color": "#1a252c"
-      };
-      const stringManifest = JSON.stringify(manifest);
-      const blob = new Blob([stringManifest], {type: 'application/json'});
-      const manifestURL = URL.createObjectURL(blob);
-      const link = document.createElement('link');
-      link.rel = 'manifest';
-      link.href = manifestURL;
-      document.head.appendChild(link);
-    })();
+  <div id="toast"></div>
 
+  <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzvd7how1B-d5vKnCtPKSxqSpwyx-pZsHwOv6tm1YFHOt-HTuhXnaMrnoTJ6Wrx75nv9w/exec";
-    
+
     const urlParams = new URLSearchParams(window.location.search);
     const tableId = urlParams.get('table') || '未設定';
-    const isViewer = urlParams.get('viewer') === 'true'; 
-    
-    const passedNum = urlParams.get('num');
-    const passedTime = urlParams.get('time');
+    const isViewer = urlParams.get('viewer') === 'true';
 
-    document.getElementById('display-table-id').innerText = tableId;
+    // Grok流の美しい状態管理に一本化（セッションストレージから履歴を復元可能に）
+    let state = {
+      allMenus: [],
+      categoryList: [],
+      cart: [],
+      orderHistory: JSON.parse(sessionStorage.getItem('orderHistory') || '[]'),
+      finalStartTime: '--:--',
+      currentOptionItem: null,
+      currentOptionQtyId: null,
+      isTabClicking: false,
+      clickTimeout: null
+    };
 
-    let allMenus = [], categoryList = [], cart = [];
-    let orderHistory = []; 
-    
-    let isTabClicking = false;
-    let clickTimeout;
-    let finalStartTime = '--:--';
-    let currentOptionItem = null;
-    let currentOptionQtyId = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
 
-    document.addEventListener("DOMContentLoaded", function() {
-        if (isViewer) {
-          document.getElementById('customer-modal').style.display = 'none';
-          document.getElementById('display-customer-count').innerText = passedNum || '-';
-          document.getElementById('display-start-time').innerText = passedTime ? decodeURIComponent(passedTime) : '--:--';
-          fetchMenus();
-        }
-        updateCartTotalCount();
+    function saveHistory() {
+      sessionStorage.setItem('orderHistory', JSON.stringify(state.orderHistory));
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById('display-table-id').innerText = tableId;
+
+      if (isViewer) {
+        document.getElementById('customer-modal').style.display = 'none';
+        document.getElementById('display-customer-count').innerText = urlParams.get('num') || '-';
+        document.getElementById('display-start-time').innerText = urlParams.get('time') ? decodeURIComponent(urlParams.get('time')) : '--:--';
+        fetchMenus();
+      }
+      updateCartTotalCount();
     });
 
     function submitModalQty() {
-      const guestCount = document.getElementById('modal-guest-count').value;
-      document.getElementById('display-customer-count').innerText = guestCount;
-      
+      const count = document.getElementById('modal-guest-count').value;
+      document.getElementById('display-customer-count').innerText = count;
+
       const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      finalStartTime = hours + ':' + minutes;
-      
-      document.getElementById('display-start-time').innerText = finalStartTime;
+      state.finalStartTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      document.getElementById('display-start-time').innerText = state.finalStartTime;
+
       document.getElementById('customer-modal').style.display = 'none';
       document.getElementById('share-qr-nav-btn').style.display = 'inline-block';
       fetchMenus();
     }
 
     function openQrModal() {
-      const baseUrl = window.location.origin + window.location.pathname;
-      const currentCount = document.getElementById('display-customer-count').innerText;
-      const shareUrl = `${baseUrl}?table=${encodeURIComponent(tableId)}&viewer=true&num=${currentCount}&time=${encodeURIComponent(finalStartTime)}`;
-      new QRious({ element: document.getElementById('qr-canvas'), value: shareUrl, size: 200 });
+      const base = window.location.origin + window.location.pathname;
+      const url = `${base}?table=${encodeURIComponent(tableId)}&viewer=true&num=${document.getElementById('display-customer-count').innerText}&time=${encodeURIComponent(state.finalStartTime)}`;
+      new QRious({ element: document.getElementById('qr-canvas'), value: url, size: 200 });
       document.getElementById('qr-modal').style.display = 'flex';
     }
-    
     function closeQrModal() { document.getElementById('qr-modal').style.display = 'none'; }
     function openOrderModal() { document.getElementById('order-modal').style.display = 'flex'; }
     function closeOrderModal() { document.getElementById('order-modal').style.display = 'none'; }
     function openSuccessModal() { document.getElementById('success-modal').style.display = 'flex'; }
     function closeSuccessModal() { document.getElementById('success-modal').style.display = 'none'; }
 
-    // カートモーダル
+    // カート一覧モーダル
     function openCartListModal() {
       const container = document.getElementById('cart-list-items');
       container.innerHTML = '';
-      if (cart.length === 0) {
+      if (state.cart.length === 0) {
         container.innerHTML = '<p style="text-align:center; color:#888; padding:20px 0;">選択中のメニューはありません。</p>';
         document.getElementById('cart-list-modal').style.display = 'flex';
         return;
       }
-      cart.forEach((item, index) => {
+      state.cart.forEach((item, index) => {
         const row = document.createElement('div');
         row.className = 'cart-item-row';
         const displayName = item.name.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '');
@@ -542,28 +476,38 @@
             <div class="cart-item-price-label">${Number(item.price).toLocaleString()}円</div>
           </div>
           <div class="cart-qty-area">
-            <button class="cart-qty-btn" onclick="updateCartItemQty(${index}, -1)">-</button>
+            <button class="cart-qty-btn" id="cart-minus-${index}">-</button>
             <span class="cart-qty-display">${item.quantity}</span>
-            <button class="cart-qty-btn" onclick="updateCartItemQty(${index}, 1)">+</button>
+            <button class="cart-qty-btn" id="cart-plus-${index}">+</button>
           </div>
         `;
         container.appendChild(row);
+        
+        // カート内ボタンへの連打・タップ設定
+        setupLongPress(document.getElementById(`cart-minus-${index}`), () => updateCartItemQty(index, -1));
+        setupLongPress(document.getElementById(`cart-plus-${index}`), () => updateCartItemQty(index, 1));
       });
       document.getElementById('cart-list-modal').style.display = 'flex';
     }
     function closeCartListModal() { document.getElementById('cart-list-modal').style.display = 'none'; }
 
+    function updateCartItemQty(index, amt) {
+      state.cart[index].quantity += amt;
+      if (state.cart[index].quantity <= 0) { state.cart.splice(index, 1); }
+      updateCartTotalCount();
+      openCartListModal();
+    }
+
     // 注文履歴モーダル
     function openHistoryModal() {
       const container = document.getElementById('history-list-items');
       container.innerHTML = '';
-      if (orderHistory.length === 0) {
+      if (state.orderHistory.length === 0) {
         container.innerHTML = '<p style="text-align:center; color:#888; padding:20px 0;">まだ注文履歴はありません。<br>確定した注文がここに表示されます。</p>';
         document.getElementById('history-modal').style.display = 'flex';
         return;
       }
-      
-      orderHistory.forEach((item) => {
+      state.orderHistory.forEach((item) => {
         const row = document.createElement('div');
         row.className = 'cart-item-row';
         const displayName = item.name.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '');
@@ -582,48 +526,41 @@
     }
     function closeHistoryModal() { document.getElementById('history-modal').style.display = 'none'; }
 
-    function updateCartItemQty(index, amt) {
-      cart[index].quantity += amt;
-      if (cart[index].quantity <= 0) { cart.splice(index, 1); }
-      updateCartTotalCount();
-      openCartListModal();
-    }
-
-    // カート状態によって右ボタンの文言・クラス（蛍点滅適用）を切り替え
+    // カート状態によって右ボタンのデザイン・蛍点滅クラスを切り替え
     function updateCartTotalCount() {
-      const totalQty = cart.reduce((sum, i) => sum + i.quantity, 0);
-      document.getElementById('cart-count').innerText = totalQty;
-      
+      const total = state.cart.reduce((sum, i) => sum + i.quantity, 0);
+      document.getElementById('cart-count').innerText = total;
+
       const btn = document.getElementById('dynamic-btn');
-      const totalHistoryQty = orderHistory.reduce((sum, i) => sum + i.quantity, 0);
-      
-      if (totalQty > 0) {
-        // カートに商品あり ➔ 注文確定ボタンに変更（CSSで自動的に蛍点滅がONになります）
-        btn.innerText = `注文を確定する\n(計 ${totalQty} 点)`;
+      const histTotal = state.orderHistory.reduce((sum, i) => sum + i.quantity, 0);
+
+      if (total > 0) {
+        btn.innerText = `🔥 注文を確定する\n(計 ${total} 点)`;
         btn.className = "dynamic-action-btn state-checkout";
       } else {
-        // カートが空 ➔ 履歴確認ボタンに変更（点滅はOFF）
-        btn.innerText = totalHistoryQty > 0 ? `📜 注文履歴を確認\n(済 ${totalHistoryQty} 点)` : "📜 注文履歴を確認";
+        btn.innerText = histTotal > 0 ? `📜 注文履歴を確認\n(済 ${histTotal} 点)` : "📜 注文履歴を確認";
         btn.className = "dynamic-action-btn state-history";
       }
     }
 
-    // 動的ボタンのクリック振り分け
     function handleDynamicBtnClick() {
-      const totalQty = cart.reduce((sum, i) => sum + i.quantity, 0);
-      if (totalQty > 0) {
-        openOrderModal();
-      } else {
-        openHistoryModal();
-      }
+      const total = state.cart.reduce((sum, i) => sum + i.quantity, 0);
+      if (total > 0) openOrderModal();
+      else openHistoryModal();
+    }
+
+    function changeQty(id, amt) {
+      const el = document.getElementById(id);
+      let q = parseInt(el.innerText) + amt;
+      el.innerText = Math.max(1, q);
     }
 
     // オプション処理
     function openOptionModal(menuId, qtyId) {
-      const item = allMenus.find(m => m.menu_id == menuId);
+      const item = state.allMenus.find(m => m.menu_id == menuId);
       if (!item) return;
-      currentOptionItem = item;
-      currentOptionQtyId = qtyId;
+      state.currentOptionItem = item;
+      state.currentOptionQtyId = qtyId;
       document.getElementById('option-modal-title').innerText = `【${item.name}】の飲み方`;
       const listContainer = document.getElementById('option-modal-list');
       listContainer.innerHTML = '';
@@ -644,24 +581,41 @@
     
     function closeOptionModal() {
       document.getElementById('option-modal').style.display = 'none';
-      currentOptionItem = null; currentOptionQtyId = null;
+      state.currentOptionItem = null; state.currentOptionQtyId = null;
     }
 
     function submitOptionSelect() {
       const selectedRadio = document.querySelector('input[name="menu-option"]:checked');
       if (!selectedRadio) return;
       const choice = selectedRadio.value;
-      const q = parseInt(document.getElementById(currentOptionQtyId).innerText);
-      const originalName = currentOptionItem.name.trim();
+      const q = parseInt(document.getElementById(state.currentOptionQtyId).innerText);
+      const originalName = state.currentOptionItem.name.trim();
       const fullName = `${originalName}(${choice})`;
       
-      const ex = cart.find(i => i.menuId === currentOptionItem.menu_id && i.name === fullName);
-      ex ? ex.quantity += q : cart.push({ menuId: currentOptionItem.menu_id, name: fullName, price: currentOptionItem.price, quantity: q });
+      const ex = state.cart.find(i => i.menuId === state.currentOptionItem.menu_id && i.name === fullName);
+      if (ex) ex.quantity += q;
+      else state.cart.push({ menuId: state.currentOptionItem.menu_id, name: fullName, price: state.currentOptionItem.price, quantity: q });
+      
       updateCartTotalCount();
+      showToast(`${fullName} ×${q} を追加しました`);
       closeOptionModal();
     }
 
-    // 注文送信
+    function addToCart(menuId, qtyId) {
+      const item = state.allMenus.find(m => m.menu_id == menuId);
+      if (!item) return;
+      const q = parseInt(document.getElementById(qtyId).innerText);
+      const name = item.name.trim();
+
+      const existing = state.cart.find(i => i.menuId === menuId && i.name === name);
+      if (existing) existing.quantity += q;
+      else state.cart.push({ menuId, name, price: item.price, quantity: q });
+
+      updateCartTotalCount();
+      showToast(`${name} ×${q} をカートに追加しました`);
+    }
+
+    // 注文送信処理の完全復活
     async function executeOrderSubmit() {
       closeOrderModal();
       document.getElementById('dynamic-btn').disabled = true;
@@ -669,7 +623,8 @@
         const params = new URLSearchParams();
         params.append('action', 'bulk_order');
         params.append('tableId', tableId);
-        params.append('cart', JSON.stringify(cart));
+        params.append('cart', JSON.stringify(state.cart));
+        
         const response = await fetch(GAS_URL, { method: 'POST', body: params, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
         const result = await response.json();
         
@@ -677,35 +632,42 @@
             openSuccessModal();
             
             // 履歴への加算マージ
-            cart.forEach(cartItem => {
-              const ex = orderHistory.find(h => h.name === cartItem.name);
-              ex ? ex.quantity += cartItem.quantity : orderHistory.push({ ...cartItem });
+            state.cart.forEach(cartItem => {
+              const ex = state.orderHistory.find(h => h.name === cartItem.name);
+              if (ex) ex.quantity += cartItem.quantity;
+              else state.orderHistory.push({ ...cartItem });
             });
             
-            cart = []; 
+            saveHistory(); // sessionStorageへ保存
+            state.cart = []; 
             updateCartTotalCount();
         } else { throw new Error(result.message); }
       } catch (e) { alert('送信エラーが発生しました。もう一度お試しください。'); console.error(e); }
       document.getElementById('dynamic-btn').disabled = false;
     }
 
-    function fetchMenus() {
-      fetch(GAS_URL).then(res => res.json()).then(data => { 
-          allMenus = data; categoryList = [];
-          for(let i=0; i<data.length; i++) {
-            let cat = data[i].category || "その他";
-            if(categoryList.indexOf(cat) === -1) categoryList.push(cat);
-          }
-          renderTabs(categoryList); renderSwipePages(categoryList); initSwipeListener();
-        }).catch(err => { console.error(err); document.getElementById('swipe-view').innerHTML = '<p style="text-align:center; color:red; padding:20px;">読み込み失敗。URLやGASの設定を確認してください。</p>'; });
+    // メニューデータの取得
+    async function fetchMenus() {
+      try {
+        const res = await fetch(GAS_URL);
+        const data = await res.json();
+        state.allMenus = data;
+        state.categoryList = [...new Set(data.map(m => m.category || "その他"))];
+        renderTabs();
+        renderSwipePages();
+        initSwipeListener();
+      } catch (e) {
+        console.error(e);
+        document.getElementById('swipe-view').innerHTML = '<p style="text-align:center; color:red; padding:20px;">読み込み失敗。URLやGASの設定を確認してください。</p>';
+      }
     }
 
-    function renderTabs(cats) {
+    function renderTabs() {
       const container = document.getElementById('tab-container'); container.innerHTML = '';
-      cats.forEach((cat, i) => {
+      state.categoryList.forEach((cat, i) => {
         const btn = document.createElement('button'); btn.className = 'category-tab' + (i === 0 ? ' active' : ''); btn.id = 'tab-btn-' + i; btn.innerText = cat;
         btn.onclick = () => {
-          isTabClicking = true; clearTimeout(clickTimeout);
+          state.isTabClicking = true; clearTimeout(state.clickTimeout);
           document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active');
           const tabContainer = document.getElementById('tab-container'); tabContainer.scrollLeft = btn.offsetLeft - (tabContainer.clientWidth / 2) + (btn.clientWidth / 2);
           const targetPage = document.getElementById('page-' + i); 
@@ -713,18 +675,19 @@
             document.getElementById('swipe-view').scrollLeft = targetPage.offsetLeft; 
             targetPage.scrollTop = 0;
           }
-          clickTimeout = setTimeout(() => { isTabClicking = false; }, 500);
+          state.clickTimeout = setTimeout(() => { state.isTabClicking = false; }, 500);
         };
         container.appendChild(btn);
       });
     }
 
-    function renderSwipePages(cats) {
+    function renderSwipePages() {
       const swipeView = document.getElementById('swipe-view'); swipeView.innerHTML = '';
-      cats.forEach((cat, idx) => {
+      state.categoryList.forEach((cat, idx) => {
         const page = document.createElement('div'); page.className = 'category-page'; page.id = 'page-' + idx;
         const grid = document.createElement('div'); grid.className = 'menu-grid';
-        const filtered = allMenus.filter(i => (i.category || "その他") === cat);
+        const filtered = state.allMenus.filter(i => (i.category || "その他") === cat);
+        
         filtered.forEach(item => {
           const card = document.createElement('div'); card.className = 'menu-card';
           const qtyId = 'qty-' + idx + '-' + item.menu_id;
@@ -739,29 +702,38 @@
             buttonHtml = `<button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${qtyId}')">追加</button>`;
           }
           
-          card.innerHTML = '<div class="menu-img-wrapper">' + (item.image ? '<img src="' + item.image + '" class="menu-img" loading="lazy">' : '<span class="no-img-text">画像なし</span>') + '</div>' +
-            '<div class="menu-card-body">' +
-              '<div class="vertical-text-area"><p class="' + nameClass + '">' + formattedName + '</p></div>' +
-              '<div>' +
-                '<div class="price-area"><span class="menu-price">' + Number(item.price).toLocaleString() + '円</span></div>' +
-                '<div class="qty-area">' +
-                  '<button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', -1)">-</button>         ' +
-                  '<span id="' + qtyId + '" style="font-weight:bold; width:20px; text-align:center;">1</span>' +
-                  '<button class="qty-btn" onclick="changeQty(\'' + qtyId + '\', 1)">+</button>          ' +
-                '</div>' +
-                buttonHtml +
-              '</div>' +
-            '</div>';
+          card.innerHTML = `
+            <div class="menu-img-wrapper">${item.image ? `<img src="${item.image}" class="menu-img" loading="lazy">` : '<span class="no-img-text">画像なし</span>'}</div>
+            <div class="menu-card-body">
+              <div class="vertical-text-area"><p class="${nameClass}">${formattedName}</p></div>
+              <div>
+                <div class="price-area"><span class="menu-price">${Number(item.price).toLocaleString()}円</span></div>
+                <div class="qty-area">
+                  <button class="qty-btn" id="minus-${qtyId}">-</button>
+                  <span id="${qtyId}" style="font-weight:bold; width:20px; text-align:center;">1</span>
+                  <button class="qty-btn" id="plus-${qtyId}">+</button>
+                </div>
+                ${buttonHtml}
+              </div>
+            </div>
+          `;
           grid.appendChild(card);
         });
         page.appendChild(grid); swipeView.appendChild(page);
+
+        // 生成された各数量変更ボタンへ、Grok式「長押し連打＆通常タップ」を完全に紐付け
+        filtered.forEach(item => {
+          const qtyId = 'qty-' + idx + '-' + item.menu_id;
+          setupLongPress(document.getElementById(`minus-${qtyId}`), () => changeQty(qtyId, -1));
+          setupLongPress(document.getElementById(`plus-${qtyId}`), () => changeQty(qtyId, 1));
+        });
       });
     }
 
     function initSwipeListener() {
       const swipeView = document.getElementById('swipe-view');
       swipeView.addEventListener('scroll', () => {
-        if (isTabClicking) return;
+        if (state.isTabClicking) return;
         const width = swipeView.clientWidth; const scrollLeft = swipeView.scrollLeft; const currentIdx = Math.round(scrollLeft / width);
         const targetTab = document.getElementById('tab-btn-' + currentIdx);
         if (targetTab && !targetTab.classList.contains('active')) {
@@ -770,27 +742,43 @@
           tabContainer.scrollTo({ left: targetLeft, behavior: 'smooth' });
         }
       });
-      swipeView.addEventListener('scrollend', () => {
-        const width = swipeView.clientWidth;
-        const currentIdx = Math.round(swipeView.scrollLeft / width);
-        document.querySelectorAll('.category-page').forEach((page, idx) => {
-          if (idx !== currentIdx) { page.scrollTop = 0; }
-        });
-        const activePage = document.getElementById('page-' + currentIdx);
-        if (activePage) { activePage.scrollTop = 0; }
-      });
     }
 
-    function changeQty(id, amt) { const el = document.getElementById(id); let q = parseInt(el.innerText) + amt; el.innerText = q < 1 ? 1 : q; }
-    
-    function addToCart(id, qtyId) {
-      const item = allMenus.find(m => m.menu_id == id);
-      if (!item) return;
-      const q = parseInt(document.getElementById(qtyId).innerText);
-      const originalName = item.name.trim();
-      const ex = cart.find(i => i.menuId === id && i.name === originalName);
-      ex ? ex.quantity += q : cart.push({ menuId: id, name: originalName, price: item.price, quantity: q });
-      updateCartTotalCount();
+    // 【Grok機能の完全対応】長押し連打と単発タップを破綻なく両立させるロジック
+    function setupLongPress(element, actionFunction) {
+      if (!element) return;
+      let timer = null;
+      let isLongPress = false;
+      let startTimeout = null;
+
+      const start = (e) => {
+        e.preventDefault();
+        isLongPress = false;
+        
+        // 最初に単発タップ分を1回実行
+        actionFunction();
+
+        // 400ミリ秒以上押し続けたら、110ミリ秒間隔の高速連打モードへ移行
+        startTimeout = setTimeout(() => {
+          isLongPress = true;
+          timer = setInterval(() => {
+            actionFunction();
+          }, 110);
+        }, 400);
+      };
+
+      const stop = (e) => {
+        e.preventDefault();
+        clearTimeout(startTimeout);
+        clearInterval(timer);
+      };
+
+      // マウス・タッチイベントの両方に完全バインド
+      element.addEventListener('mousedown', start);
+      element.addEventListener('mouseup', stop);
+      element.addEventListener('mouseleave', stop);
+      element.addEventListener('touchstart', start, { passive: false });
+      element.addEventListener('touchend', stop, { passive: false });
     }
   </script>
 </body>
