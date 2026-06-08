@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
+  <meta name="referrer" content="no-referrer">
+
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
@@ -135,17 +137,15 @@
       container-type: inline-size;
     }
 
-    /* 全体的にフォントサイズの上限・下限を底上げ */
+    /* フォントサイズルール */
     .menu-name-text {
       font-weight: bold;
       color: #111;
       white-space: pre;
       line-height: 1.25;
-      /* 標準サイズを最大19px、縮小しても15.5pxを下回らないよう底上げ */
       font-size: clamp(15.5px, 9.2cqi, 19px);
     }
 
-    /* 長いメニュー向けの微調整クラスもサイズ感を一回り大きく修正 */
     .menu-name-text.adjust-medium {
       font-size: clamp(14.5px, 8.5cqi, 16.5px);
     }
@@ -196,7 +196,6 @@
     }
     .cart-info-btn { flex: 1; background: #f5f5f5; border: 1px solid #ccc; color: #333; }
 
-    /* なめらかでメリハリのある蛍点滅 */
     @keyframes hotaru-blink {
       0%, 100% { background-color: #a02020; box-shadow: 0 4px 10px rgba(160,32,32,0.05); }
       50% { background-color: #ff4d4d; box-shadow: 0 4px 25px rgba(255,77,77,0.85); }
@@ -411,6 +410,24 @@
       isTabClicking: false,
       clickTimeout: null
     };
+
+    // シークレットモードでも確実にGoogleドライブの画像を表示させるためのURL最適化関数
+    function optimizeImageUrl(rawUrl) {
+      if (!rawUrl) return '';
+      let url = rawUrl.trim();
+      
+      // ドライブのプレビューURLや共有URLからIDを抽出してクッキー不要なエンドポイントへ書き換え
+      if (url.includes('drive.google.com')) {
+        let fileId = '';
+        const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+        if (idMatch && idMatch[1]) {
+          fileId = idMatch[1];
+          // クッキー不要、かつリファラーに依存しないサムネイルエンドポイントへ強制変換
+          return `https://lh3.googleusercontent.com/d/${fileId}`;
+        }
+      }
+      return url;
+    }
 
     function showToast(msg) {
       const toast = document.getElementById('toast');
@@ -697,9 +714,14 @@
           } else {
             buttonHtml = `<button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${qtyId}')">追加</button>`;
           }
+
+          // 画像URLを最適化して安全なエンドポイントへ変換
+          const secureImgUrl = optimizeImageUrl(item.image);
           
           card.innerHTML = `
-            <div class="menu-img-wrapper">${item.image ? `<img src="${item.image}" class="menu-img">` : '<span class="no-img-text">画像なし</span>'}</div>
+            <div class="menu-img-wrapper">
+              ${secureImgUrl ? `<img src="${secureImgUrl}" class="menu-img" crossorigin="anonymous" referrerpolicy="no-referrer">` : '<span class="no-img-text">画像なし</span>'}
+            </div>
             <div class="menu-card-body">
               <div class="vertical-text-area"><p class="menu-name-text${sizeClass}">${formattedName}</p></div>
               <div>
