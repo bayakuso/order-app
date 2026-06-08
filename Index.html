@@ -121,7 +121,7 @@
 
     .menu-card-body { padding: 10px 8px 8px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
 
-    /* 高さを110pxに完全固定（スクロール廃止、はみ出しを隠す） */
+    /* 高さを110pxに完全固定（スクロール、はみ出しを隠す） */
     .vertical-text-area {
       writing-mode: vertical-rl;
       text-orientation: mixed;
@@ -132,34 +132,26 @@
       box-sizing: border-box;
       padding-right: 4px;
       overflow: hidden;
+      container-type: inline-size; /* コンテナクエリの有効化 */
     }
 
-    /* 単品メニュー（改行なし）：流動サイズ変化 */
-    .menu-name-single {
+    /* メニューテキスト共通（clampとコンテナクエリを組み合わせ、極端な縮小を防ぐ） */
+    .menu-name-text {
       font-weight: bold;
-      font-size: clamp(11px, 8.2cqi, 18px);
-      line-height: 1.15;
       color: #111;
-      white-space: nowrap;
+      white-space: pre; /* Androidの自動折り返しバグ防止 */
+      line-height: 1.25;
+      /* 基本の縮小ルールを設定。1行あたりのバランスを整える */
+      font-size: clamp(14px, 8.5cqi, 18px);
     }
 
-    /* 改行指示メニュー（複数行）の基本サイズ：17px */
-    /* Android対策：勝手に折り返して右列に流れないよう white-space: pre を指定 */
-    .menu-name-multi {
-      font-weight: bold;
-      font-size: 17px; 
+    /* 文字数・行数に応じた微調整クラス（滑らかな落としどころへ修正） */
+    .menu-name-text.adjust-medium {
+      font-size: clamp(13px, 7.5cqi, 15px);
+    }
+    .menu-name-text.adjust-small {
+      font-size: clamp(11.5px, 6.8cqi, 13.5px);
       line-height: 1.2;
-      color: #111;
-      white-space: pre;
-    }
-
-    /* JavaScript判定で強制適用される縮小用クラス群 */
-    .menu-name-multi.text-medium {
-      font-size: 13.5px;
-    }
-    .menu-name-multi.text-small {
-      font-size: 11px;
-      line-height: 1.15;
     }
 
     .price-area { padding-left: 4px; margin-top: 8px; }
@@ -456,7 +448,6 @@
       fetchMenus();
     }
 
-    // QR生成部
     function openQrModal() {
       const base = window.location.origin + window.location.pathname;
       const url = `${base}?table=${encodeURIComponent(tableId)}&viewer=true&num=${document.getElementById('display-customer-count').innerText}&time=${encodeURIComponent(state.finalStartTime)}`;
@@ -678,28 +669,27 @@
           const qtyId = 'qty-' + idx + '-' + item.menu_id;
           
           let formattedName = item.name.replace(/<br\s*\/?>/gi, '\n');
-          let nameClass = 'menu-name-multi'; // Androidの回り込みバグを防ぐためmulti側（white-space: pre）を標準化
-          let sizeClass = '';
+          let sizeClass = ''; // 動的微調整用クラス
           
           if (formattedName.includes('\n')) {
-            // 最初から改行指定（<br>）があるメニューの判定
+            // 改行指定がある複数行メニュー
             const lines = formattedName.split('\n');
             const lineCount = lines.length;
             let maxLineLength = 0;
             lines.forEach(l => { if (l.length > maxLineLength) maxLineLength = l.length; });
 
             if (lineCount >= 3 || maxLineLength >= 8) {
-              sizeClass = ' text-small';   // 3行以上、または1行8文字以上
+              sizeClass = ' adjust-small';   // 3行以上、または1行8文字以上
             } else if (lineCount >= 2 && maxLineLength >= 5) {
-              sizeClass = ' text-medium';  // 2行かつ1行5文字以上
+              sizeClass = ' adjust-medium';  // 2行かつ1行5文字以上
             }
           } else {
-            // 改行指定がない1行メニューの判定（フライドポテト、ほうれん草サラダなど）
+            // 改行指定がない単一行メニュー（フライドポテト、ほうれん草サラダなど）
             const textLength = formattedName.length;
             if (textLength >= 8) {
-              sizeClass = ' text-small';   // 8文字以上（ほうれん草サラダ[8文字]など）は最小フォントにして確実に1行に収める
+              sizeClass = ' adjust-small';   // 8文字以上（「ほうれん草サラダ」など）
             } else if (textLength >= 6) {
-              sizeClass = ' text-medium';  // 6〜7文字（フライドポテト[7文字]など）は中サイズ
+              sizeClass = ' adjust-medium';  // 6〜7文字（「フライドポテト」など）
             }
           }
           
@@ -713,7 +703,7 @@
           card.innerHTML = `
             <div class="menu-img-wrapper">${item.image ? `<img src="${item.image}" class="menu-img" loading="lazy">` : '<span class="no-img-text">画像なし</span>'}</div>
             <div class="menu-card-body">
-              <div class="vertical-text-area"><p class="${nameClass}${sizeClass}">${formattedName}</p></div>
+              <div class="vertical-text-area"><p class="menu-name-text${sizeClass}">${formattedName}</p></div>
               <div>
                 <div class="price-area"><span class="menu-price">${Number(item.price).toLocaleString()}円</span></div>
                 <div class="qty-area">
