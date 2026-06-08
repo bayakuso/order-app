@@ -145,15 +145,24 @@
       white-space: nowrap;
     }
 
-    /* 改行指示メニュー（複数行）：基本サイズを大きくしつつ、収まらない場合は自動縮小 */
+        /* 改行指示メニュー（複数行）の基本サイズ：17pxにアップ */
     .menu-name-multi {
       font-weight: bold;
-      /* 💡 基本サイズを15.5pxから17pxへサイズアップ */
       font-size: 17px; 
       line-height: 1.2;
       color: #111;
       white-space: pre-wrap;
-      
+    }
+
+    /* 💡 新設：文字数が多い場合に強制適用する縮小クラス */
+    .menu-name-multi.text-medium {
+      font-size: 14px; /* 中サイズ */
+    }
+    .menu-name-multi.text-small {
+      font-size: 11.5px; /* 小サイズ（限界値） */
+      line-height: 1.15;
+    }
+ 
       /* 💡 縦が110pxを超えそうになった場合、自動的に文字を縮小させて枠内に収める */
       max-height: 100%;
       font-size: clamp(11px, 4.5cqh, 17px); 
