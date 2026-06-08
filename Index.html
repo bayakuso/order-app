@@ -95,7 +95,7 @@
       padding-bottom: 40px;
     }
 
-     /* 短冊風メニューカード */
+    /* 短冊風メニューカード */
     .menu-card {
       background: #fcfaf2;
       border-radius: 4px;
@@ -106,8 +106,6 @@
       border-bottom: 3px solid #c8bfae;
       display: flex;
       flex-direction: column;
-      /* 💡 文字の自動縮小シミュレーションのためにカード単位で監視 */
-      container-type: inline-size; 
     }
 
     .menu-img-wrapper {
@@ -123,7 +121,7 @@
 
     .menu-card-body { padding: 10px 8px 8px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
 
-    /* 高さを110pxに完全固定（スクロールを廃止し、溢れはみ出しをカット） */
+    /* 高さを110pxに完全固定（スクロール廃止、はみ出しを隠す） */
     .vertical-text-area {
       writing-mode: vertical-rl;
       text-orientation: mixed;
@@ -133,10 +131,10 @@
       width: 100%;
       box-sizing: border-box;
       padding-right: 4px;
-      overflow: hidden; /* 💡 スクロールバーを廃止 */
+      overflow: hidden;
     }
 
-    /* 単品メニュー（改行なし）：カード幅に応じて細かく流動変化 */
+    /* 単品メニュー（改行なし）：流動サイズ変化 */
     .menu-name-single {
       font-weight: bold;
       font-size: clamp(11px, 8.2cqi, 18px);
@@ -145,7 +143,7 @@
       white-space: nowrap;
     }
 
-        /* 改行指示メニュー（複数行）の基本サイズ：17pxにアップ */
+    /* 改行指示メニュー（複数行）の基本サイズ：17pxにサイズアップ */
     .menu-name-multi {
       font-weight: bold;
       font-size: 17px; 
@@ -154,18 +152,13 @@
       white-space: pre-wrap;
     }
 
-    /* 💡 新設：文字数が多い場合に強制適用する縮小クラス */
+    /* JavaScript判定で強制適用される縮小用クラス群（110pxへのフィット精度を強化） */
     .menu-name-multi.text-medium {
-      font-size: 14px; /* 中サイズ */
+      font-size: 14px;
     }
     .menu-name-multi.text-small {
-      font-size: 11.5px; /* 小サイズ（限界値） */
+      font-size: 11.5px;
       line-height: 1.15;
-    }
- 
-      /* 💡 縦が110pxを超えそうになった場合、自動的に文字を縮小させて枠内に収める */
-      max-height: 100%;
-      font-size: clamp(11px, 4.5cqh, 17px); 
     }
 
     .price-area { padding-left: 4px; margin-top: 8px; }
@@ -414,7 +407,6 @@
     const tableId = urlParams.get('table') || '未設定';
     const isViewer = urlParams.get('viewer') === 'true';
 
-    // Grok流の美しい状態管理に一本化（セッションストレージから履歴を復元可能に）
     let state = {
       allMenus: [],
       categoryList: [],
@@ -475,7 +467,6 @@
     function openSuccessModal() { document.getElementById('success-modal').style.display = 'flex'; }
     function closeSuccessModal() { document.getElementById('success-modal').style.display = 'none'; }
 
-    // カート一覧モーダル
     function openCartListModal() {
       const container = document.getElementById('cart-list-items');
       container.innerHTML = '';
@@ -501,7 +492,6 @@
         `;
         container.appendChild(row);
         
-        // カート内ボタンへの連打・タップ設定
         setupLongPress(document.getElementById(`cart-minus-${index}`), () => updateCartItemQty(index, -1));
         setupLongPress(document.getElementById(`cart-plus-${index}`), () => updateCartItemQty(index, 1));
       });
@@ -516,7 +506,6 @@
       openCartListModal();
     }
 
-    // 注文履歴モーダル
     function openHistoryModal() {
       const container = document.getElementById('history-list-items');
       container.innerHTML = '';
@@ -544,7 +533,6 @@
     }
     function closeHistoryModal() { document.getElementById('history-modal').style.display = 'none'; }
 
-    // カート状態によって右ボタンのデザイン・蛍点滅クラスを切り替え
     function updateCartTotalCount() {
       const total = state.cart.reduce((sum, i) => sum + i.quantity, 0);
       document.getElementById('cart-count').innerText = total;
@@ -573,7 +561,6 @@
       el.innerText = Math.max(1, q);
     }
 
-    // オプション処理
     function openOptionModal(menuId, qtyId) {
       const item = state.allMenus.find(m => m.menu_id == menuId);
       if (!item) return;
@@ -633,7 +620,6 @@
       showToast(`${name} ×${q} をカートに追加しました`);
     }
 
-    // 注文送信処理の完全復活
     async function executeOrderSubmit() {
       closeOrderModal();
       document.getElementById('dynamic-btn').disabled = true;
@@ -649,14 +635,13 @@
         if (result.status === 'success') {
             openSuccessModal();
             
-            // 履歴への加算マージ
             state.cart.forEach(cartItem => {
               const ex = state.orderHistory.find(h => h.name === cartItem.name);
               if (ex) ex.quantity += cartItem.quantity;
               else state.orderHistory.push({ ...cartItem });
             });
             
-            saveHistory(); // sessionStorageへ保存
+            saveHistory();
             state.cart = []; 
             updateCartTotalCount();
         } else { throw new Error(result.message); }
@@ -664,7 +649,6 @@
       document.getElementById('dynamic-btn').disabled = false;
     }
 
-    // メニューデータの取得
     async function fetchMenus() {
       try {
         const res = await fetch(GAS_URL);
@@ -699,7 +683,7 @@
       });
     }
 
-      function renderSwipePages() {
+    function renderSwipePages() {
       const swipeView = document.getElementById('swipe-view'); swipeView.innerHTML = '';
       state.categoryList.forEach((cat, idx) => {
         const page = document.createElement('div'); page.className = 'category-page'; page.id = 'page-' + idx;
@@ -713,28 +697,24 @@
           let formattedName = item.name.replace(/<br\s*\/?>/gi, '\n');
           let nameClass = formattedName.includes('\n') ? 'menu-name-multi' : 'menu-name-single';
           
-          // 💡 Android Chrome縦書き専用：行数と1行の長さをバラバラに分解して判定
           let sizeClass = '';
           if (formattedName.includes('\n')) {
-            const lines = formattedName.split('\n'); // 改行で区切って配列にする
-            const lineCount = lines.length;          // 行数（2行か、3行か）
+            const lines = formattedName.split('\n');
+            const lineCount = lines.length;
             
-            // 各行の中で、一番長い行の文字数を取得
             let maxLineLength = 0;
             lines.forEach(l => {
               if (l.length > maxLineLength) maxLineLength = l.length;
             });
 
-            // 🔲 判定基準を大幅に厳格化
             if (lineCount >= 3 || maxLineLength >= 9) {
-              sizeClass = ' text-small';  // 3行以上、または1行に9文字以上あるなら最小サイズ(11.5px)へ
+              sizeClass = ' text-small';  // 3行以上、または1行9文字以上なら最小(11.5px)
             } else if (lineCount >= 2 && maxLineLength >= 6) {
-              sizeClass = ' text-medium'; // 2行かつ1行に6文字以上なら中サイズ(14px)へ
+              sizeClass = ' text-medium'; // 2行かつ1行6文字以上なら中サイズ(14px)
             }
           } else {
-            // 💡 改行なし（シングル）でも、Androidで長すぎる場合は強制的に縮小させる安全策
             if (formattedName.length >= 8) {
-              nameClass = 'menu-name-multi'; // 縦書きマルチ用のスタイルを流用
+              nameClass = 'menu-name-multi';
               sizeClass = ' text-medium';
             }
             if (formattedName.length >= 10) {
@@ -769,7 +749,6 @@
         });
         page.appendChild(grid); swipeView.appendChild(page);
 
-        // 各数量変更ボタンへ長押し連打＆通常タップを紐付け
         filtered.forEach(item => {
           const qtyId = 'qty-' + idx + '-' + item.menu_id;
           setupLongPress(document.getElementById(`minus-${qtyId}`), () => changeQty(qtyId, -1));
@@ -792,7 +771,6 @@
       });
     }
 
-    // 【Grok機能の完全対応】長押し連打と単発タップを破綻なく両立させるロジック
     function setupLongPress(element, actionFunction) {
       if (!element) return;
       let timer = null;
@@ -803,10 +781,8 @@
         e.preventDefault();
         isLongPress = false;
         
-        // 最初に単発タップ分を1回実行
         actionFunction();
 
-        // 400ミリ秒以上押し続けたら、110ミリ秒間隔の高速連打モードへ移行
         startTimeout = setTimeout(() => {
           isLongPress = true;
           timer = setInterval(() => {
@@ -821,7 +797,6 @@
         clearInterval(timer);
       };
 
-      // マウス・タッチイベントの両方に完全バインド
       element.addEventListener('mousedown', start);
       element.addEventListener('mouseup', stop);
       element.addEventListener('mouseleave', stop);
