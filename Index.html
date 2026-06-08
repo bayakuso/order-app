@@ -3,9 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  
-  <meta name="referrer" content="no-referrer">
-
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
@@ -146,13 +143,8 @@
       font-size: clamp(15.5px, 9.2cqi, 19px);
     }
 
-    .menu-name-text.adjust-medium {
-      font-size: clamp(14.5px, 8.5cqi, 16.5px);
-    }
-    .menu-name-text.adjust-small {
-      font-size: clamp(13px, 7.8cqi, 14.5px);
-      line-height: 1.2;
-    }
+    .menu-name-text.adjust-medium { font-size: clamp(14.5px, 8.5cqi, 16.5px); }
+    .menu-name-text.adjust-small { font-size: clamp(13px, 7.8cqi, 14.5px); line-height: 1.2; }
 
     .price-area { padding-left: 4px; margin-top: 8px; }
     .menu-price { color: #1a252c; font-weight: bold; font-size: 1.02rem; }
@@ -410,24 +402,6 @@
       isTabClicking: false,
       clickTimeout: null
     };
-
-    // シークレットモードでも確実にGoogleドライブの画像を表示させるためのURL最適化関数
-    function optimizeImageUrl(rawUrl) {
-      if (!rawUrl) return '';
-      let url = rawUrl.trim();
-      
-      // ドライブのプレビューURLや共有URLからIDを抽出してクッキー不要なエンドポイントへ書き換え
-      if (url.includes('drive.google.com')) {
-        let fileId = '';
-        const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-        if (idMatch && idMatch[1]) {
-          fileId = idMatch[1];
-          // クッキー不要、かつリファラーに依存しないサムネイルエンドポイントへ強制変換
-          return `https://lh3.googleusercontent.com/d/${fileId}`;
-        }
-      }
-      return url;
-    }
 
     function showToast(msg) {
       const toast = document.getElementById('toast');
@@ -715,6 +689,7 @@
             buttonHtml = `<button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${qtyId}')">追加</button>`;
           }
           
+          // GASから届いたBase64データをそのままsrcに流し込む形に最適化
           card.innerHTML = `
             <div class="menu-img-wrapper">
               ${item.image ? `<img src="${item.image}" class="menu-img">` : '<span class="no-img-text">画像なし</span>'}
