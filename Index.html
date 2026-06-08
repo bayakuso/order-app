@@ -121,7 +121,7 @@
 
     .menu-card-body { padding: 10px 8px 8px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
 
-    /* 高さを110pxに完全固定（スクロール、はみ出しを隠す） */
+    /* 高さを110pxに完全固定 */
     .vertical-text-area {
       writing-mode: vertical-rl;
       text-orientation: mixed;
@@ -132,25 +132,25 @@
       box-sizing: border-box;
       padding-right: 4px;
       overflow: hidden;
-      container-type: inline-size; /* コンテナクエリの有効化 */
+      container-type: inline-size;
     }
 
-    /* メニューテキスト共通（clampとコンテナクエリを組み合わせ、極端な縮小を防ぐ） */
+    /* 全体的にフォントサイズの上限・下限を底上げ */
     .menu-name-text {
       font-weight: bold;
       color: #111;
-      white-space: pre; /* Androidの自動折り返しバグ防止 */
+      white-space: pre;
       line-height: 1.25;
-      /* 基本の縮小ルールを設定。1行あたりのバランスを整える */
-      font-size: clamp(14px, 8.5cqi, 18px);
+      /* 標準サイズを最大19px、縮小しても15.5pxを下回らないよう底上げ */
+      font-size: clamp(15.5px, 9.2cqi, 19px);
     }
 
-    /* 文字数・行数に応じた微調整クラス（滑らかな落としどころへ修正） */
+    /* 長いメニュー向けの微調整クラスもサイズ感を一回り大きく修正 */
     .menu-name-text.adjust-medium {
-      font-size: clamp(13px, 7.5cqi, 15px);
+      font-size: clamp(14.5px, 8.5cqi, 16.5px);
     }
     .menu-name-text.adjust-small {
-      font-size: clamp(11.5px, 6.8cqi, 13.5px);
+      font-size: clamp(13px, 7.8cqi, 14.5px);
       line-height: 1.2;
     }
 
@@ -669,27 +669,25 @@
           const qtyId = 'qty-' + idx + '-' + item.menu_id;
           
           let formattedName = item.name.replace(/<br\s*\/?>/gi, '\n');
-          let sizeClass = ''; // 動的微調整用クラス
+          let sizeClass = '';
           
           if (formattedName.includes('\n')) {
-            // 改行指定がある複数行メニュー
             const lines = formattedName.split('\n');
             const lineCount = lines.length;
             let maxLineLength = 0;
             lines.forEach(l => { if (l.length > maxLineLength) maxLineLength = l.length; });
 
             if (lineCount >= 3 || maxLineLength >= 8) {
-              sizeClass = ' adjust-small';   // 3行以上、または1行8文字以上
+              sizeClass = ' adjust-small';
             } else if (lineCount >= 2 && maxLineLength >= 5) {
-              sizeClass = ' adjust-medium';  // 2行かつ1行5文字以上
+              sizeClass = ' adjust-medium';
             }
           } else {
-            // 改行指定がない単一行メニュー（フライドポテト、ほうれん草サラダなど）
             const textLength = formattedName.length;
             if (textLength >= 8) {
-              sizeClass = ' adjust-small';   // 8文字以上（「ほうれん草サラダ」など）
+              sizeClass = ' adjust-small';
             } else if (textLength >= 6) {
-              sizeClass = ' adjust-medium';  // 6〜7文字（「フライドポテト」など）
+              sizeClass = ' adjust-medium';
             }
           }
           
@@ -701,7 +699,7 @@
           }
           
           card.innerHTML = `
-            <div class="menu-img-wrapper">${item.image ? `<img src="${item.image}" class="menu-img" loading="lazy">` : '<span class="no-img-text">画像なし</span>'}</div>
+            <div class="menu-img-wrapper">${item.image ? `<img src="${item.image}" class="menu-img">` : '<span class="no-img-text">画像なし</span>'}</div>
             <div class="menu-card-body">
               <div class="vertical-text-area"><p class="menu-name-text${sizeClass}">${formattedName}</p></div>
               <div>
