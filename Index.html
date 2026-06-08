@@ -699,7 +699,7 @@
       });
     }
 
-    function renderSwipePages() {
+      function renderSwipePages() {
       const swipeView = document.getElementById('swipe-view'); swipeView.innerHTML = '';
       state.categoryList.forEach((cat, idx) => {
         const page = document.createElement('div'); page.className = 'category-page'; page.id = 'page-' + idx;
@@ -713,6 +713,17 @@
           let formattedName = item.name.replace(/<br\s*\/?>/gi, '\n');
           let nameClass = formattedName.includes('\n') ? 'menu-name-multi' : 'menu-name-single';
           
+          // 💡 JavaScript側で文字数をカウントし、適切なサイズクラスを強制付与
+          let sizeClass = '';
+          if (formattedName.includes('\n')) {
+            const textLength = formattedName.length;
+            if (textLength >= 18) {
+              sizeClass = ' text-small';  // 18文字以上なら11.5pxに縮小
+            } else if (textLength >= 12) {
+              sizeClass = ' text-medium'; // 12文字以上なら14pxに縮小
+            }
+          }
+          
           let buttonHtml = '';
           if (item.options && item.options.trim() !== '') {
             buttonHtml = `<button class="add-cart-btn has-option" onclick="openOptionModal('${item.menu_id}', '${qtyId}')">飲み方選択</button>`;
@@ -723,7 +734,7 @@
           card.innerHTML = `
             <div class="menu-img-wrapper">${item.image ? `<img src="${item.image}" class="menu-img" loading="lazy">` : '<span class="no-img-text">画像なし</span>'}</div>
             <div class="menu-card-body">
-              <div class="vertical-text-area"><p class="${nameClass}">${formattedName}</p></div>
+              <div class="vertical-text-area"><p class="${nameClass}${sizeClass}">${formattedName}</p></div>
               <div>
                 <div class="price-area"><span class="menu-price">${Number(item.price).toLocaleString()}円</span></div>
                 <div class="qty-area">
@@ -739,7 +750,7 @@
         });
         page.appendChild(grid); swipeView.appendChild(page);
 
-        // 生成された各数量変更ボタンへ、Grok式「長押し連打＆通常タップ」を完全に紐付け
+        // 各数量変更ボタンへ長押し連打＆通常タップを紐付け
         filtered.forEach(item => {
           const qtyId = 'qty-' + idx + '-' + item.menu_id;
           setupLongPress(document.getElementById(`minus-${qtyId}`), () => changeQty(qtyId, -1));
