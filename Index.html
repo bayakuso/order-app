@@ -713,14 +713,33 @@
           let formattedName = item.name.replace(/<br\s*\/?>/gi, '\n');
           let nameClass = formattedName.includes('\n') ? 'menu-name-multi' : 'menu-name-single';
           
-          // 💡 JavaScript側で文字数をカウントし、適切なサイズクラスを強制付与
+          // 💡 Android Chrome縦書き専用：行数と1行の長さをバラバラに分解して判定
           let sizeClass = '';
           if (formattedName.includes('\n')) {
-            const textLength = formattedName.length;
-            if (textLength >= 18) {
-              sizeClass = ' text-small';  // 18文字以上なら11.5pxに縮小
-            } else if (textLength >= 12) {
-              sizeClass = ' text-medium'; // 12文字以上なら14pxに縮小
+            const lines = formattedName.split('\n'); // 改行で区切って配列にする
+            const lineCount = lines.length;          // 行数（2行か、3行か）
+            
+            // 各行の中で、一番長い行の文字数を取得
+            let maxLineLength = 0;
+            lines.forEach(l => {
+              if (l.length > maxLineLength) maxLineLength = l.length;
+            });
+
+            // 🔲 判定基準を大幅に厳格化
+            if (lineCount >= 3 || maxLineLength >= 9) {
+              sizeClass = ' text-small';  // 3行以上、または1行に9文字以上あるなら最小サイズ(11.5px)へ
+            } else if (lineCount >= 2 && maxLineLength >= 6) {
+              sizeClass = ' text-medium'; // 2行かつ1行に6文字以上なら中サイズ(14px)へ
+            }
+          } else {
+            // 💡 改行なし（シングル）でも、Androidで長すぎる場合は強制的に縮小させる安全策
+            if (formattedName.length >= 8) {
+              nameClass = 'menu-name-multi'; // 縦書きマルチ用のスタイルを流用
+              sizeClass = ' text-medium';
+            }
+            if (formattedName.length >= 10) {
+              nameClass = 'menu-name-multi';
+              sizeClass = ' text-small';
             }
           }
           
