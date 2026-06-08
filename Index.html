@@ -714,13 +714,10 @@
           } else {
             buttonHtml = `<button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${qtyId}')">追加</button>`;
           }
-
-          // 画像URLを最適化して安全なエンドポイントへ変換
-          const secureImgUrl = optimizeImageUrl(item.image);
           
           card.innerHTML = `
             <div class="menu-img-wrapper">
-              ${secureImgUrl ? `<img src="${secureImgUrl}" class="menu-img" crossorigin="anonymous" referrerpolicy="no-referrer">` : '<span class="no-img-text">画像なし</span>'}
+              ${item.image ? `<img src="${item.image}" class="menu-img">` : '<span class="no-img-text">画像なし</span>'}
             </div>
             <div class="menu-card-body">
               <div class="vertical-text-area"><p class="menu-name-text${sizeClass}">${formattedName}</p></div>
