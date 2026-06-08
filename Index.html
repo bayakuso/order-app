@@ -143,21 +143,22 @@
       white-space: nowrap;
     }
 
-    /* 改行指示メニュー（複数行）の基本サイズ：17pxにサイズアップ */
+    /* 改行指示メニュー（複数行）の基本サイズ：17px */
+    /* Android対策：勝手に折り返して右列に流れないよう white-space: pre を指定 */
     .menu-name-multi {
       font-weight: bold;
       font-size: 17px; 
       line-height: 1.2;
       color: #111;
-      white-space: pre-wrap;
+      white-space: pre;
     }
 
-    /* JavaScript判定で強制適用される縮小用クラス群（110pxへのフィット精度を強化） */
+    /* JavaScript判定で強制適用される縮小用クラス群 */
     .menu-name-multi.text-medium {
-      font-size: 14px;
+      font-size: 13.5px;
     }
     .menu-name-multi.text-small {
-      font-size: 11.5px;
+      font-size: 11px;
       line-height: 1.15;
     }
 
@@ -455,6 +456,7 @@
       fetchMenus();
     }
 
+    // QR生成部
     function openQrModal() {
       const base = window.location.origin + window.location.pathname;
       const url = `${base}?table=${encodeURIComponent(tableId)}&viewer=true&num=${document.getElementById('display-customer-count').innerText}&time=${encodeURIComponent(state.finalStartTime)}`;
@@ -664,25 +666,6 @@
       }
     }
 
-    function renderTabs() {
-      const container = document.getElementById('tab-container'); container.innerHTML = '';
-      state.categoryList.forEach((cat, i) => {
-        const btn = document.createElement('button'); btn.className = 'category-tab' + (i === 0 ? ' active' : ''); btn.id = 'tab-btn-' + i; btn.innerText = cat;
-        btn.onclick = () => {
-          state.isTabClicking = true; clearTimeout(state.clickTimeout);
-          document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active');
-          const tabContainer = document.getElementById('tab-container'); tabContainer.scrollLeft = btn.offsetLeft - (tabContainer.clientWidth / 2) + (btn.clientWidth / 2);
-          const targetPage = document.getElementById('page-' + i); 
-          if(targetPage) { 
-            document.getElementById('swipe-view').scrollLeft = targetPage.offsetLeft; 
-            targetPage.scrollTop = 0;
-          }
-          state.clickTimeout = setTimeout(() => { state.isTabClicking = false; }, 500);
-        };
-        container.appendChild(btn);
-      });
-    }
-
     function renderSwipePages() {
       const swipeView = document.getElementById('swipe-view'); swipeView.innerHTML = '';
       state.categoryList.forEach((cat, idx) => {
@@ -695,31 +678,28 @@
           const qtyId = 'qty-' + idx + '-' + item.menu_id;
           
           let formattedName = item.name.replace(/<br\s*\/?>/gi, '\n');
-          let nameClass = formattedName.includes('\n') ? 'menu-name-multi' : 'menu-name-single';
-          
+          let nameClass = 'menu-name-multi'; // Androidの回り込みバグを防ぐためmulti側（white-space: pre）を標準化
           let sizeClass = '';
+          
           if (formattedName.includes('\n')) {
+            // 最初から改行指定（<br>）があるメニューの判定
             const lines = formattedName.split('\n');
             const lineCount = lines.length;
-            
             let maxLineLength = 0;
-            lines.forEach(l => {
-              if (l.length > maxLineLength) maxLineLength = l.length;
-            });
+            lines.forEach(l => { if (l.length > maxLineLength) maxLineLength = l.length; });
 
-            if (lineCount >= 3 || maxLineLength >= 9) {
-              sizeClass = ' text-small';  // 3行以上、または1行9文字以上なら最小(11.5px)
-            } else if (lineCount >= 2 && maxLineLength >= 6) {
-              sizeClass = ' text-medium'; // 2行かつ1行6文字以上なら中サイズ(14px)
+            if (lineCount >= 3 || maxLineLength >= 8) {
+              sizeClass = ' text-small';   // 3行以上、または1行8文字以上
+            } else if (lineCount >= 2 && maxLineLength >= 5) {
+              sizeClass = ' text-medium';  // 2行かつ1行5文字以上
             }
           } else {
-            if (formattedName.length >= 8) {
-              nameClass = 'menu-name-multi';
-              sizeClass = ' text-medium';
-            }
-            if (formattedName.length >= 10) {
-              nameClass = 'menu-name-multi';
-              sizeClass = ' text-small';
+            // 改行指定がない1行メニューの判定（フライドポテト、ほうれん草サラダなど）
+            const textLength = formattedName.length;
+            if (textLength >= 8) {
+              sizeClass = ' text-small';   // 8文字以上（ほうれん草サラダ[8文字]など）は最小フォントにして確実に1行に収める
+            } else if (textLength >= 6) {
+              sizeClass = ' text-medium';  // 6〜7文字（フライドポテト[7文字]など）は中サイズ
             }
           }
           
@@ -757,6 +737,25 @@
       });
     }
 
+    function renderTabs() {
+      const container = document.getElementById('tab-container'); container.innerHTML = '';
+      state.categoryList.forEach((cat, i) => {
+        const btn = document.createElement('button'); btn.className = 'category-tab' + (i === 0 ? ' active' : ''); btn.id = 'tab-btn-' + i; btn.innerText = cat;
+        btn.onclick = () => {
+          state.isTabClicking = true; clearTimeout(state.clickTimeout);
+          document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+          const tabContainer = document.getElementById('tab-container'); tabContainer.scrollLeft = btn.offsetLeft - (tabContainer.clientWidth / 2) + (btn.clientWidth / 2);
+          const targetPage = document.getElementById('page-' + i); 
+          if(targetPage) { 
+            document.getElementById('swipe-view').scrollLeft = targetPage.offsetLeft; 
+            targetPage.scrollTop = 0;
+          }
+          state.clickTimeout = setTimeout(() => { state.isTabClicking = false; }, 500);
+        };
+        container.appendChild(btn);
+      });
+    }
+
     function initSwipeListener() {
       const swipeView = document.getElementById('swipe-view');
       swipeView.addEventListener('scroll', () => {
@@ -774,20 +773,13 @@
     function setupLongPress(element, actionFunction) {
       if (!element) return;
       let timer = null;
-      let isLongPress = false;
       let startTimeout = null;
 
       const start = (e) => {
         e.preventDefault();
-        isLongPress = false;
-        
         actionFunction();
-
         startTimeout = setTimeout(() => {
-          isLongPress = true;
-          timer = setInterval(() => {
-            actionFunction();
-          }, 110);
+          timer = setInterval(() => { actionFunction(); }, 110);
         }, 400);
       };
 
