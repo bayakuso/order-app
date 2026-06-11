@@ -4,70 +4,57 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>御料理・御酒 注文処</title>
-  <style>
-    :root {
-      --primary-color: #b89c66; /* 高級感のある和モダンゴールド */
-      --accent-color: #d32f2f;  /* 漆風の朱赤 */
-      --bg-color: #fcfaf2;      /* 鳥の子紙（和紙）風の淡い和白 */
-      --text-color: #2c2c2c;    /* 墨色 */
-      --card-bg: #ffffff;
-    }
-
+   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+      font-family: sans-serif;
     }
 
     body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
+      background-color: #f5f5f5;
+      color: #333;
       padding-bottom: 80px;
+      overflow-x: hidden; /* スワイプ時の画面ハミ出し防止 */
     }
 
     /* 上部ヘッダー */
     header {
-      background-color: #1a1a1a; /* 落ち着いた黒漆調 */
+      background-color: #333;
       color: #fff;
       padding: 15px;
       text-align: center;
       position: sticky;
       top: 0;
       z-index: 100;
-      border-bottom: 3px solid var(--primary-color);
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
     
     .header-title {
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       font-weight: bold;
-      letter-spacing: 2px;
-      color: #f7f4eb;
     }
 
     .table-badge {
       display: inline-block;
-      background: var(--primary-color);
-      color: #1a1a1a;
-      padding: 2px 10px;
-      border-radius: 20px;
-      font-size: 0.85rem;
+      background: #e0e0e0;
+      color: #333;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
       font-weight: bold;
       margin-top: 5px;
     }
 
-    /* カテゴリタブ（横スクロール） */
+    /* カテゴリタブ */
     .category-nav {
       display: flex;
       overflow-x: auto;
-      background: #ffffff;
-      border-bottom: 1px solid #e0dabf;
-      sticky: top;
+      background: #fff;
+      border-bottom: 1px solid #ccc;
       position: sticky;
-      top: 61px;
+      top: 55px;
       z-index: 99;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
     
     .category-nav::-webkit-scrollbar {
@@ -76,63 +63,57 @@
     
     .category-tab {
       flex: 0 0 auto;
-      padding: 14px 20px;
+      padding: 12px 20px;
       color: #666;
       font-weight: bold;
-      font-size: 0.95rem;
       border-bottom: 3px solid transparent;
       cursor: pointer;
-      transition: all 0.2s ease;
     }
     
     .category-tab.active {
-      color: var(--accent-color);
-      border-bottom-color: var(--accent-color);
-      background: #fffbf0;
+      color: #d32f2f;
+      border-bottom-color: #d32f2f;
     }
 
-    /* メニューリストコンテナ */
+    /* メニューリスト（スワイプアニメーション用設定を追加） */
     .menu-container {
-      padding: 12px;
+      padding: 10px;
       max-width: 600px;
       margin: 0 auto;
+      transition: transform 0.2s ease-out, opacity 0.2s ease-out;
     }
 
-    /* メニュースタイル（カード型・縦並び） */
     .menu-card {
-      background: var(--card-bg);
-      border: 1px solid #e8e2cf;
-      border-radius: 8px;
-      margin-bottom: 12px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-bottom: 10px;
       overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
       display: flex;
-      height: 110px;
+      height: 100px;
     }
 
     .menu-img {
-      width: 110px;
-      height: 110px;
+      width: 100px;
+      height: 100px;
       object-fit: cover;
       background-color: #eee;
       flex-shrink: 0;
     }
 
     .menu-details {
-      padding: 10px 12px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       flex-grow: 1;
-      min-width: 0; /* 文字溢れガード */
+      min-width: 0;
     }
 
     .menu-name {
       font-size: 0.95rem;
       font-weight: bold;
-      color: #1a1a1a;
-      line-height: 1.3;
-      white-space: normal;
+      color: #000;
     }
 
     .menu-meta {
@@ -144,7 +125,7 @@
     .menu-price {
       font-size: 1.1rem;
       font-weight: bold;
-      color: var(--accent-color);
+      color: #d32f2f;
     }
     .menu-price::after {
       content: " 円";
@@ -152,52 +133,44 @@
       color: #666;
     }
 
-    /* 注文・数量操作エリア */
     .action-area {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 5px;
     }
 
     .qty-select {
-      padding: 4px 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      padding: 3px;
       font-size: 0.9rem;
-      background: #fafafa;
     }
 
     .add-cart-btn {
-      background-color: var(--accent-color);
+      background-color: #d32f2f;
       color: white;
       border: none;
-      padding: 6px 14px;
-      border-radius: 4px;
+      padding: 5px 10px;
+      border-radius: 3px;
       font-size: 0.85rem;
       font-weight: bold;
       cursor: pointer;
-      box-shadow: 0 2px 4px rgba(211,47,47,0.3);
     }
     
     .add-cart-btn.has-option {
-      background-color: var(--primary-color);
-      color: #1a1a1a;
-      box-shadow: 0 2px 4px rgba(184,156,102,0.3);
+      background-color: #666;
     }
 
-    /* 下部注文カート固定バー */
+    /* 下部固定バー */
     .cart-bar {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      height: 65px;
-      background: #1a1a1a;
-      border-top: 2px solid var(--primary-color);
+      height: 60px;
+      background: #333;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 16px;
+      padding: 0 15px;
       z-index: 90;
     }
 
@@ -205,141 +178,126 @@
       color: #fff;
     }
     .cart-count {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: #ccc;
     }
     .cart-total-price {
       font-size: 1.2rem;
       font-weight: bold;
-      color: var(--primary-color);
+      color: #fff;
     }
 
     .cart-actions {
       display: flex;
-      gap: 10px;
+      gap: 5px;
     }
 
     .bar-btn {
-      padding: 10px 16px;
-      border-radius: 4px;
+      padding: 8px 12px;
+      border-radius: 3px;
       font-weight: bold;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       border: none;
       cursor: pointer;
     }
     .history-btn {
-      background: #444;
+      background: #555;
       color: #fff;
     }
     .view-cart-btn {
-      background: var(--accent-color);
+      background: #d32f2f;
       color: #fff;
     }
 
-    /* モーダル基礎スタイル */
+    /* モーダル */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.5);
       z-index: 200;
       display: none;
       justify-content: center;
       align-items: center;
-      padding: 15px;
+      padding: 10px;
     }
 
     .modal-sheet {
       background: #fff;
       width: 100%;
-      max-width: 450px;
-      border-radius: 8px;
+      max-width: 400px;
+      border-radius: 5px;
       overflow: hidden;
-      box-shadow: 0 5px 25px rgba(0,0,0,0.3);
       display: flex;
       flex-direction: column;
-      max-height: 85vh;
+      max-height: 80vh;
     }
 
     .modal-header {
-      background: #1a1a1a;
+      background: #333;
       color: #fff;
-      padding: 14px 16px;
+      padding: 12px;
       font-weight: bold;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 2px solid var(--primary-color);
     }
 
     .modal-close {
       background: none;
       border: none;
       color: #fff;
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       cursor: pointer;
     }
 
     .modal-body {
-      padding: 16px;
+      padding: 15px;
       overflow-y: auto;
       flex-grow: 1;
     }
 
     .modal-footer {
-      padding: 12px 16px;
-      background: #f9f9f9;
-      border-top: 1px solid #eee;
+      padding: 10px;
+      background: #f5f5f5;
+      border-top: 1px solid #ddd;
       display: flex;
       justify-content: flex-end;
-      gap: 10px;
+      gap: 5px;
     }
 
-    /* 汎用的なカート内・履歴行アイテム */
     .cart-item-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid #eee;
+      padding: 10px 0;
+      border-bottom: 1px solid #ddd;
     }
     .cart-item-info {
       flex-grow: 1;
-      padding-right: 10px;
     }
     .cart-item-name {
       font-weight: bold;
-      font-size: 0.95rem;
     }
     .cart-item-price-label {
       font-size: 0.8rem;
       color: #666;
-      margin-top: 2px;
     }
 
-    /* ラジオボタンデザイン（オプション用） */
     .option-group {
-      margin-bottom: 15px;
+      margin-bottom: 10px;
     }
     .option-title {
       font-weight: bold;
-      font-size: 0.95rem;
-      margin-bottom: 8px;
-      color: #333;
+      margin-bottom: 5px;
     }
     .option-label {
       display: block;
-      padding: 10px;
+      padding: 8px;
       border: 1px solid #ddd;
-      border-radius: 4px;
-      margin-bottom: 6px;
-      cursor: pointer;
-      font-size: 0.9rem;
+      margin-bottom: 5px;
+      border-radius: 3px;
     }
-    .option-label input {
-      margin-right: 8px;
-    }
-
-    /* ウェルカムモーダル用（人数選択・Wi-Fi接続） */
+    
     .guest-select-wrapper {
       position: relative;
       width: 100%;
@@ -348,55 +306,49 @@
     }
     .guest-select {
       width: 100%;
-      padding: 12px;
+      padding: 10px;
       font-size: 16px;
       font-weight: bold;
-      border: 2px solid var(--primary-color);
+      border: 1px solid #333;
       border-radius: 4px;
-      appearance: none;
       background: #fff;
-      text-align: center;
     }
     
-    /* Wi-Fi接続ボタンのスタイル */
     .wifi-connect-box {
-      margin: 20px 0;
-      padding: 15px;
-      background-color: #fffbf2;
-      border: 1px dashed var(--primary-color);
-      border-radius: 6px;
+      margin: 15px 0;
+      padding: 12px;
+      background-color: #fff;
+      border: 1px dashed #333;
+      border-radius: 4px;
     }
     .wifi-btn {
       display: block;
       width: 100%;
       box-sizing: border-box;
-      padding: 12px;
-      background-color: var(--primary-color);
-      color: #1a1a1a;
+      padding: 10px;
+      background-color: #333;
+      color: white;
       border: none;
       border-radius: 4px;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: bold;
       text-decoration: none;
       text-align: center;
-      box-shadow: 0 4px 8px rgba(184, 156, 102, 0.2);
-      -webkit-tap-highlight-color: transparent;
     }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="header-title">御料理・御酒 注文処</div>
+    <div class="header-title">注文アプリ</div>
     <div class="table-badge"><span id="display-table-id">--</span> 番卓</div>
   </header>
 
   <nav class="category-nav" id="category-bar">
-    <div class="category-tab active" onclick="switchCategory('all')">すべて</div>
-  </nav>
+    </nav>
 
   <main class="menu-container" id="menu-list">
-    <p style="text-align:center; padding:40px; color:#666;">お品書きを読み込み中...</p>
+    <p style="text-align:center; padding:20px; color:#666;">データを読み込み中...</p>
   </main>
 
   <div class="cart-bar">
@@ -413,30 +365,28 @@
   <div id="customer-modal" class="modal-overlay" style="display:block;">
     <div class="modal-sheet" style="text-align:center;">
       <div class="modal-header">
-        <div style="width:100%; text-align:center;">いらっしゃいませ</div>
+        <div style="width:100%; text-align:center;">ご案内</div>
       </div>
       <div class="modal-body">
-        <h3 style="margin: 10px 0 5px 0; color:var(--accent-color);">【店主おすすめ】</h3>
-        <p style="font-size:14px; font-weight:bold; color:#1a1a1a; margin-bottom:20px;">本日のお通し：特製おつまみ三品盛り</p>
+        <p style="font-size:14px; font-weight:bold; color:#d32f2f; margin-bottom:15px;">本日のお通し：特製おつまみ三品盛り</p>
         
-        <div id="section-guest-select" style="margin-bottom:35px; display:none;">
-          <label style="display:block;font-size:14px;color:#333;margin-bottom:12px;font-weight:bold;">■ ご来店人数を選択してください</label>
+        <div id="section-guest-select" style="margin-bottom:20px; display:none;">
+          <label style="display:block;font-size:14px;margin-bottom:8px;font-weight:bold;">人数を選択してください</label>
           <div class="guest-select-wrapper">
             <select id="modal-guest-count" class="guest-select">
               <option value="1">1 名</option><option value="2">2 名</option><option value="3">3 名</option>
               <option value="4">4 名</option><option value="5">5 名</option><option value="6">6 名</option>
               <option value="7">7 名</option><option value="8">8 名</option>
             </select>
-            <div style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #b89c66; pointer-events: none;">▼</div>
           </div>
         </div>
 
         <div id="section-wifi-connect" class="wifi-connect-box" style="display:none;">
-          <p style="font-size:13px; font-weight:bold; margin:0 0 10px 0; color:#333;">📶 パスワード入力なしで店内のWi-Fiに接続できます</p>
-          <a href="WIFI:S:ここにSSID;T:WPA;P:ここにパスワード;;" class="wifi-btn">タップして店舗Wi-Fiに接続</a>
+          <p style="font-size:13px; margin:0 0 8px 0; font-weight:bold;">店内のWi-Fiに自動接続できます</p>
+          <a href="WIFI:S:ここにSSID;T:WPA;P:ここにパスワード;;" class="wifi-btn">店舗Wi-Fiに接続</a>
         </div>
 
-        <button onclick="submitModalQty()" style="width:80%;max-width:250px;padding:14px;font-size:16px;font-weight:bold;background:var(--accent-color);color:white;border:none;border-radius:4px;box-shadow:0 4px 10px rgba(211,47,47,0.2); cursor:pointer;">
+        <button onclick="submitModalQty()" style="width:80%;padding:12px;font-size:15px;font-weight:bold;background:#d32f2f;color:white;border:none;border-radius:4px;cursor:pointer;margin-top:10px;">
           お品書きを見る
         </button>
       </div>
@@ -446,14 +396,13 @@
   <div id="cart-modal" class="modal-overlay">
     <div class="modal-sheet">
       <div class="modal-header">
-        <div>ご注文の確認</div>
+        <div>注文確認</div>
         <button class="modal-close" onclick="closeModal('cart-modal')">×</button>
       </div>
-      <div class="modal-body" id="cart-list-items">
-        </div>
+      <div class="modal-body" id="cart-list-items"></div>
       <div class="modal-footer">
-        <button class="bar-btn history-btn" onclick="closeModal('cart-modal')" style="padding:8px 14px;">戻る</button>
-        <button class="bar-btn view-cart-btn" id="send-order-btn" onclick="sendBulkOrder()" style="padding:8px 16px;">注文を確定する</button>
+        <button class="bar-btn history-btn" onclick="closeModal('cart-modal')">戻る</button>
+        <button class="bar-btn view-cart-btn" id="send-order-btn" onclick="sendBulkOrder()">注文を確定する</button>
       </div>
     </div>
   </div>
@@ -461,13 +410,12 @@
   <div id="history-modal" class="modal-overlay">
     <div class="modal-sheet">
       <div class="modal-header">
-        <div>これまでの注文履歴</div>
+        <div>注文履歴</div>
         <button class="modal-close" onclick="closeModal('history-modal')">×</button>
       </div>
-      <div class="modal-body" id="history-list-items">
-        </div>
+      <div class="modal-body" id="history-list-items"></div>
       <div class="modal-footer">
-        <button class="bar-btn view-cart-btn" onclick="closeModal('history-modal')" style="padding:8px 16px; background:#444;">閉じる</button>
+        <button class="bar-btn view-cart-btn" onclick="closeModal('history-modal')" style="background:#555;">閉じる</button>
       </div>
     </div>
   </div>
@@ -475,71 +423,115 @@
   <div id="option-modal" class="modal-overlay">
     <div class="modal-sheet">
       <div class="modal-header">
-        <div id="option-modal-title">飲み方の選択</div>
+        <div>選択</div>
         <button class="modal-close" onclick="closeModal('option-modal')">×</button>
       </div>
       <div class="modal-body">
         <div class="option-group">
-          <div class="option-title">ご希望の飲み方を選択してください</div>
-          <div id="option-container-list">
-            </div>
+          <div class="option-title">項目を選択してください</div>
+          <div id="option-container-list"></div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="bar-btn history-btn" onclick="closeModal('option-modal')" style="padding:8px 14px;">キャンセル</button>
-        <button class="bar-btn view-cart-btn" id="option-confirm-submit-btn" style="padding:8px 16px;">選択を確定</button>
+        <button class="bar-btn history-btn" onclick="closeModal('option-modal')">キャンセル</button>
+        <button class="bar-btn view-cart-btn" id="option-confirm-submit-btn">確定</button>
       </div>
     </div>
   </div>
 
   <script>
-    // --- 【重要設定】Google Apps ScriptのWebアプリURL ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzvd7how1B-d5vKnCtPKSxqSpwyx-pZsHwOv6tm1YFHOt-HTuhXnaMrnoTJ6Wrx75nv9w/exec";
 
-    // URLパラメータの解析
     const urlParams = new URLSearchParams(window.location.search);
     const tableId = urlParams.get('table') || 'A';
-    const isViewer = urlParams.get('view') === 'true'; // 個人スマホからの読み込みなら true
+    const isViewer = urlParams.get('view') === 'true';
 
-    // アプリ内状態管理
     let state = {
       allMenus: [],
-      currentCategory: 'all',
+      categories: [], // カテゴリー一覧の保持用
+      currentCategory: '', // 初期値は空、データ取得時に最初のカテゴリーを設定
       cart: []
     };
 
-    // 初期起動時イベント
+    // スワイプ操作用の変数
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('display-table-id').innerText = tableId;
 
       if (isViewer) {
-        // 【お客さんの個人スマホの場合】URLから人数・時間を引き継ぎ、Wi-Fi接続ボタンを表示
-        const guestNum = urlParams.get('num') || '-';
-        const startTime = urlParams.get('time') ? decodeURIComponent(urlParams.get('time')) : '--:--';
-        
-        // 案内画面（ウェルカム）を表示し、Wi-Fi側を出して人数選択は隠す
         document.getElementById('customer-modal').style.display = 'block';
         document.getElementById('section-wifi-connect').style.display = 'block';
         document.getElementById('section-guest-select').style.display = 'none';
-        
         fetchMenus();
       } else {
-        // 【店舗の固定卓上端末の場合】人数選択を表示し、Wi-Fiは隠す
         document.getElementById('customer-modal').style.display = 'block';
         document.getElementById('section-wifi-connect').style.display = 'none';
         document.getElementById('section-guest-select').style.display = 'block';
       }
       updateCartTotalCount();
+      setupSwipeEvents(); // スワイプイベントの登録
     });
 
-    // ウェルカム画面のボタン処理
+    function setupSwipeEvents() {
+      const menuList = document.getElementById('menu-list');
+      
+      menuList.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+
+      menuList.addEventListener('touchmove', (e) => {
+        // 左右スワイプを滑らかに見せるための簡易エフェクト（任意）
+        let moveX = e.changedTouches[0].screenX - touchStartX;
+        let moveY = e.changedTouches[0].screenY - touchStartY;
+        // 縦スクロールの邪魔をしないよう、横移動が強い場合のみ要素を少しずらす
+        if (Math.abs(moveX) > Math.abs(moveY) && Math.abs(moveX) < 80) {
+          menuList.style.transform = `translateX(${moveX}px)`;
+          menuList.style.opacity = `${1 - Math.abs(moveX)/150}`;
+        }
+      }, { passive: true });
+
+      menuList.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        menuList.style.transform = '';
+        menuList.style.opacity = '';
+        handleSwipeGesture();
+      }, { passive: true });
+    }
+
+    function handleSwipeGesture() {
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      
+      // 縦スクロールと誤判定しないよう、横スワイプのしきい値を設定（最低60pxの移動）
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60) {
+        const currentIndex = state.categories.indexOf(state.currentCategory);
+        
+        if (deltaX < 0) {
+          // 左スワイプ ＝ 次のカテゴリーへ（右へ移動）
+          if (currentIndex < state.categories.length - 1) {
+            switchCategory(state.categories[currentIndex + 1]);
+          }
+        } else {
+          // 右スワイプ ＝ 前のカテゴリーへ（左へ移動）
+          if (currentIndex > 0) {
+            switchCategory(state.categories[currentIndex - 1]);
+          }
+        }
+      }
+    }
+
     function submitModalQty() {
       if (!isViewer) {
         const guestCount = document.getElementById('modal-guest-count').value;
         const now = new Date();
         const timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
         
-        // お客さん用QRのためにURLパラメータを最適化してメニュー読み込み
         urlParams.set('num', guestCount);
         urlParams.set('time', encodeURIComponent(timeStr));
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
@@ -548,12 +540,19 @@
       closeModal('customer-modal');
     }
 
-    // メニュー取得（マスター）
     async function fetchMenus() {
       try {
         const response = await fetch(GAS_URL);
         const data = await response.json();
         state.allMenus = data;
+        
+        // 「すべて」を除外し、存在する固有のカテゴリーのみを抽出して保持
+        state.categories = [...new Set(state.allMenus.map(m => m.category).filter(Boolean))];
+        
+        // 初期カテゴリーを先頭の項目に設定
+        if (state.categories.length > 0) {
+          state.currentCategory = state.categories[0];
+        }
         
         buildCategoryBar();
         renderMenuList();
@@ -562,43 +561,60 @@
       }
     }
 
-    // カテゴリタブの動的組み立て
     function buildCategoryBar() {
-      const categories = ['all', ...new Set(state.allMenus.map(m => m.category).filter(Boolean))];
       const bar = document.getElementById('category-bar');
       bar.innerHTML = '';
       
-      categories.forEach(cat => {
+      state.categories.forEach(cat => {
         const tab = document.createElement('div');
         tab.className = `category-tab ${state.currentCategory === cat ? 'active' : ''}`;
-        tab.innerText = cat === 'all' ? 'すべて' : cat;
+        tab.innerText = cat;
         tab.onclick = () => switchCategory(cat);
         bar.appendChild(tab);
       });
+      scrollToActiveTab();
     }
 
     function switchCategory(cat) {
       state.currentCategory = cat;
+      
+      // タブの表示状態を更新
       const tabs = document.querySelectorAll('.category-tab');
-      tabs.forEach(t => t.classList.remove('active'));
-      event.target.classList.add('active');
+      tabs.forEach(t => {
+        if(t.innerText === cat) {
+          t.classList.add('active');
+        } else {
+          t.classList.remove('active');
+        }
+      });
+      
+      scrollToActiveTab();
       renderMenuList();
     }
 
-    // お品書き一覧のレンダリング
+    // アクティブなタブが画面外に隠れないよう自動スクロール
+    function scrollToActiveTab() {
+      const activeTab = document.querySelector('.category-tab.active');
+      if (activeTab) {
+        activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+
     function renderMenuList() {
       const listContainer = document.getElementById('menu-list');
       listContainer.innerHTML = '';
 
-      const filtered = state.currentCategory === 'all' 
-        ? state.allMenus 
-        : state.allMenus.filter(m => m.category === state.currentCategory);
+      // 現在選択されている特定のカテゴリーのみを抽出
+      const filtered = state.allMenus.filter(m => m.category === state.currentCategory);
 
       if (filtered.length === 0) {
-        listContainer.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">該当するお品書きがありません。</p>';
+        listContainer.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">お品書きがありません。</p>';
         return;
       }
 
+      // 表示切り替え時のフェードイン演出（スワイプ感の向上）
+      listContainer.style.opacity = 0;
+      
       filtered.forEach(item => {
         const card = document.createElement('div');
         card.className = 'menu-card';
@@ -606,26 +622,23 @@
         const imgSrc = item.image_base64 || item.image || '';
         const qtyId = `qty-${item.menu_id}`;
 
-        // 数量セレクトボックス（1〜10）
         let qtyOptions = '';
         for(let idx = 1; idx <= 10; idx++) {
           qtyOptions += `<option value="${idx}">${idx}</option>`;
         }
 
-        // 大文字小文字・単数複数・日本語の表記揺らぎを自動的に吸収して判定
         const rawOptionValue = item.options || item.option || item.Options || item.Option || item.オプション || '';
 
         let buttonHtml = '';
         if (rawOptionValue && String(rawOptionValue).trim() !== '') {
-          // 内部データを共通キー(options)に正規化
           item.options = String(rawOptionValue).trim();
-          buttonHtml = `<button class="add-cart-btn has-option" onclick="openOptionModal('${item.menu_id}', '${qtyId}')">飲み方選択</button>`;
+          buttonHtml = `<button class="add-cart-btn has-option" onclick="openOptionModal('${item.menu_id}', '${qtyId}')">選択</button>`;
         } else {
           buttonHtml = `<button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${qtyId}')">追加</button>`;
         }
 
         card.innerHTML = `
-          <img src="${imgSrc}" class="menu-img" alt="${item.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22110%22 height=%22110%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23eee%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2212%22 fill=%22%23aaa%22>御料理</text></svg>';">
+          <img src="${imgSrc}" class="menu-img" alt="${item.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%22 height=%22100%22 fill=%22%23eee%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2212%22 fill=%22%23aaa%22>画像なし</text></svg>';">
           <div class="menu-details">
             <div class="menu-name">${item.name}</div>
             <div class="menu-meta">
@@ -639,18 +652,19 @@
         `;
         listContainer.appendChild(card);
       });
+
+      setTimeout(() => { listContainer.style.opacity = 1; }, 50);
     }
 
-    // オプション選択画面を開く
     function openOptionModal(menuId, qtyId) {
       const item = state.allMenus.find(m => m.menu_id == menuId);
       const qty = document.getElementById(qtyId).value;
       
-      document.getElementById('option-modal-title').innerText = `${item.name} (数量: ${qty})`;
+      const modal = document.getElementById('option-modal');
+      modal.querySelector('.option-title').innerText = `${item.name} (${qty}点)の項目を選択してください`;
       const container = document.getElementById('option-container-list');
       container.innerHTML = '';
 
-      // カンマ区切りの文字列を配列に分割
       const opts = item.options.split(/[,、\s]+/);
       opts.forEach((opt, index) => {
         const trimmedOpt = opt.trim();
@@ -668,22 +682,19 @@
         closeModal('option-modal');
       };
 
-      document.getElementById('option-modal').style.display = 'flex';
+      modal.style.display = 'flex';
     }
 
-    // 通常のカート追加
     function addToCart(menuId, qtyId) {
       const item = state.allMenus.find(m => m.menu_id == menuId);
       const qty = document.getElementById(qtyId).value;
       executeAddToCart(item, qty, null);
     }
 
-    // カート追加処理の実体
     function executeAddToCart(item, qty, optionText) {
       const quantity = Number(qty);
-      const finalName = optionText ? `${item.name} 【${optionText}】` : item.name;
+      const finalName = optionText ? `${item.name} [${optionText}]` : item.name;
 
-      // 既に同一名（同一オプション）がカート内にあるか確認
       const existing = state.cart.find(c => c.name === finalName);
       if (existing) {
         existing.quantity += quantity;
@@ -696,21 +707,8 @@
         });
       }
       updateCartTotalCount();
-      
-      // ボタンを一瞬「完了」にするプチ演出
-      const activeBtn = event.target;
-      if(activeBtn && activeBtn.tagName === 'BUTTON') {
-        const originalText = activeBtn.innerText;
-        activeBtn.innerText = "✓ 選択中";
-        activeBtn.style.opacity = 0.7;
-        setTimeout(() => {
-          activeBtn.innerText = originalText;
-          activeBtn.style.opacity = 1;
-        }, 800);
-      }
     }
 
-    // フッター固定バーの合計表示更新
     function updateCartTotalCount() {
       const totalQty = state.cart.reduce((sum, c) => sum + c.quantity, 0);
       const totalPrice = state.cart.reduce((sum, c) => sum + (c.price * c.quantity), 0);
@@ -719,19 +717,15 @@
       document.getElementById('total-price').innerText = totalPrice.toLocaleString();
     }
 
-    // カート確認モーダルを開く
     function openCartModal() {
       const container = document.getElementById('cart-list-items');
       container.innerHTML = '';
 
       if (state.cart.length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#999;padding:30px 0;">カートは空っぽです。</p>';
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:20px 0;">カートは空です。</p>';
         document.getElementById('send-order-btn').disabled = true;
-        document.getElementById('send-order-btn').style.opacity = 0.4;
       } else {
         document.getElementById('send-order-btn').disabled = false;
-        document.getElementById('send-order-btn').style.opacity = 1;
-
         state.cart.forEach((item, index) => {
           const row = document.createElement('div');
           row.className = 'cart-item-row';
@@ -740,7 +734,7 @@
               <div class="cart-item-name">${item.name}</div>
               <div class="cart-item-price-label">${item.price.toLocaleString()}円 × ${item.quantity}</div>
             </div>
-            <button onclick="removeFromCart(${index})" style="background:none;border:none;color:#d32f2f;font-weight:bold;padding:10px;font-size:14px;cursor:pointer;">取消</button>
+            <button onclick="removeFromCart(${index})" style="color:#d32f2f; background:none; border:none; font-weight:bold; padding:5px;">取消</button>
           `;
           container.appendChild(row);
         });
@@ -754,60 +748,52 @@
       openCartModal();
     }
 
-    // 🌟【重要：リアルタイム通信版】注文履歴モーダルを開く
     async function openHistoryModal() {
       const container = document.getElementById('history-list-items');
-      container.innerHTML = '<p style="text-align:center; color:#888; padding:20px 0;">調理場より最新状態を取得中...</p>';
+      container.innerHTML = '<p style="text-align:center; color:#888; padding:15px 0;">最新状態を取得中...</p>';
       document.getElementById('history-modal').style.display = 'flex';
 
       try {
-        // mode=kitchen で注文テキストのみを高速一括取得
         const res = await fetch(`${GAS_URL}?mode=kitchen`);
         const data = await res.json();
         
-        // この卓(tableId)のデータだけを抽出
         const currentTableOrders = (data.orders || []).filter(o => String(o.tableId).trim() === String(tableId).trim());
 
         container.innerHTML = '';
         
         if (currentTableOrders.length === 0) {
-          container.innerHTML = '<p style="text-align:center; color:#888; padding:20px 0;">まだ注文履歴はありません。<br>送信した注文の状態がここに表示されます。</p>';
+          container.innerHTML = '<p style="text-align:center; color:#888; padding:15px 0;">注文履歴はありません。</p>';
           return;
         }
 
-        // 逆順（最新の注文が一番上に来るように）で描画
         currentTableOrders.reverse().forEach((item) => {
           const row = document.createElement('div');
           row.className = 'cart-item-row';
           const cleanName = item.menuName.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '');
           
-          // ステータス（調理中/提供済）の判定と装飾バッジの出し分け
           let statusLabel = '';
           if (item.status === '提供済' || item.status === '提供済み') {
-            statusLabel = '<span style="color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem;">👍 提供済</span>';
+            statusLabel = '<span style="color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">提供済</span>';
           } else {
-            statusLabel = '<span style="color: #ff9800; font-weight: bold; background: #fff3e0; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem;">⏳ 調理中</span>';
+            statusLabel = '<span style="color: #ff9800; font-weight: bold; background: #fff3e0; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">調理中</span>';
           }
 
           row.innerHTML = `
             <div class="cart-item-info">
-              <div class="cart-item-name" style="color: #333;">${cleanName}</div>
-              <div class="cart-item-price-label" style="margin-top: 5px;">${statusLabel} <span style="color:#999; margin-left:8px;">${item.time}</span></div>
+              <div class="cart-item-name">${cleanName}</div>
+              <div class="cart-item-price-label" style="margin-top: 3px;">${statusLabel} <span style="color:#999; margin-left:5px;">${item.time}</span></div>
             </div>
-            <div style="font-weight: bold; font-size: 1.1rem; padding-right: 8px; color: #1a1a1a;">
-              ${item.quantity} 点
-            </div>
+            <div style="font-weight: bold; color: #333;">${item.quantity} 点</div>
           `;
           container.appendChild(row);
         });
 
       } catch (e) {
         console.error(e);
-        container.innerHTML = '<p style="text-align:center; color:red; padding:20px 0;">履歴の取得に失敗しました。<br>通信環境をお確かめの上、再度お試しください。</p>';
+        container.innerHTML = '<p style="text-align:center; color:red; padding:15px 0;">履歴の取得に失敗しました。</p>';
       }
     }
 
-    // カート内の一括注文確定送信（POST）
     async function sendBulkOrder() {
       const btn = document.getElementById('send-order-btn');
       btn.disabled = true;
@@ -825,23 +811,22 @@
         const result = await response.json();
 
         if (result.status === 'success') {
-          alert('ご注文を承りました！厨房に送信しました。');
-          state.cart = []; // カートを空にする
+          alert('注文を送信しました。');
+          state.cart = [];
           updateCartTotalCount();
           closeModal('cart-modal');
         } else {
-          alert(`注文送信エラー: ${result.message}`);
+          alert(`エラー: ${result.message}`);
           btn.disabled = false;
           btn.innerText = "注文を確定する";
         }
       } catch (err) {
-        alert(`通信に失敗しました。注文は送信されていません。\n${err.toString()}`);
+        alert(`通信失敗: ${err.toString()}`);
         btn.disabled = false;
         btn.innerText = "注文を確定する";
       }
     }
 
-    // モーダルを閉じる補助
     function closeModal(id) {
       document.getElementById(id).style.display = 'none';
     }
