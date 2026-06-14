@@ -206,35 +206,36 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 15px;
+      padding: 0 20px;
       z-index: 90;
     }
 
-    .cart-info {
-      color: #fff;
-    }
-    .cart-count {
-      font-size: 0.8rem;
+    /* 左側ロゴ・文言用エリア（金額撤廃につき店舗感のある装飾に） */
+    .cart-bar-left {
       color: #ccc;
-    }
-    .cart-total-price {
-      font-size: 1.2rem;
+      font-size: 0.9rem;
       font-weight: bold;
-      color: #fff;
+      letter-spacing: 1px;
     }
 
     .cart-actions {
       display: flex;
-      gap: 5px;
+      gap: 15px;
+    }
+
+    /* 通知バッジを内包するためのラッパー */
+    .btn-wrapper {
+      position: relative;
     }
 
     .bar-btn {
-      padding: 8px 12px;
-      border-radius: 3px;
+      padding: 10px 16px;
+      border-radius: 4px;
       font-weight: bold;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       border: none;
       cursor: pointer;
+      height: 40px;
     }
     .history-btn {
       background: #555;
@@ -243,6 +244,46 @@
     .view-cart-btn {
       background: #d32f2f;
       color: #fff;
+    }
+
+    /* スマホアプリ風 通知バッジ */
+    .notification-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background-color: #d32f2f;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: bold;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: none; /* 初期は非表示 */
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      z-index: 95;
+    }
+
+    /* 蛍のようなじんわり点滅アニメーション */
+    .hotaru-glow {
+      animation: hotaruAnimation 2.5s infinite ease-in-out;
+    }
+
+    @keyframes hotaruAnimation {
+      0% {
+        opacity: 0.4;
+        box-shadow: 0 0 2px rgba(211, 47, 47, 0.4);
+      }
+      50% {
+        opacity: 1;
+        box-shadow: 0 0 10px rgba(211, 47, 47, 0.8), 0 0 15px rgba(211, 47, 47, 0.4);
+      }
+      100% {
+        opacity: 0.4;
+        box-shadow: 0 0 2px rgba(211, 47, 47, 0.4);
+      }
     }
 
     /* モーダル基本設定 */
@@ -299,6 +340,26 @@
       display: flex;
       justify-content: flex-end;
       gap: 5px;
+    }
+
+    /* 履歴内 合計金額ヘッダーのスタイル */
+    .history-total-banner {
+      background-color: #fff8f2;
+      border: 1px solid #f5e6d3;
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .history-total-label {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 2px;
+    }
+    .history-total-value {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #d32f2f;
     }
 
     .cart-item-row {
@@ -430,13 +491,13 @@
   </main>
 
   <div class="cart-bar">
-    <div class="cart-info">
-      <div class="cart-count">選択中: <span id="total-count">0</span> 点</div>
-      <div class="cart-total-price"><span id="total-price">0</span>円</div>
-    </div>
+    <div class="cart-bar-left">お気軽にご注文ください</div>
     <div class="cart-actions">
       <button class="bar-btn history-btn" onclick="openHistoryModal()">注文履歴</button>
-      <button class="bar-btn view-cart-btn" onclick="openCartModal()">カートを見る</button>
+      <div class="btn-wrapper">
+        <button class="bar-btn view-cart-btn" onclick="openCartModal()">カートを見る</button>
+        <div class="notification-badge hotaru-glow" id="cart-badge-count">0</div>
+      </div>
     </div>
   </div>
 
@@ -494,7 +555,13 @@
         <div>注文履歴</div>
         <button class="modal-close" onclick="closeModal('history-modal')">×</button>
       </div>
-      <div class="modal-body" id="history-list-items"></div>
+      <div class="modal-body">
+        <div class="history-total-banner" id="history-total-banner-area" style="display:none;">
+          <div class="history-total-label">これまでの合計金額</div>
+          <div class="history-total-value" id="history-cumulative-total">0 円</div>
+        </div>
+        <div id="history-list-items"></div>
+      </div>
       <div class="modal-footer">
         <button class="bar-btn view-cart-btn" onclick="closeModal('history-modal')" style="background:#555;">閉じる</button>
       </div>
@@ -570,7 +637,7 @@
         document.getElementById('section-wifi-connect').style.display = 'none';
         document.getElementById('section-guest-select').style.display = 'block';
       }
-      updateCartTotalCount();
+      updateCartBadge();
       setupSwipeEvents();
     });
 
@@ -829,15 +896,20 @@
           quantity: quantity
         });
       }
-      updateCartTotalCount();
+      updateCartBadge();
     }
 
-    function updateCartTotalCount() {
+    /* 通知バッジの点数と蛍エフェクトの制御 */
+    function updateCartBadge() {
       const totalQty = state.cart.reduce((sum, c) => sum + c.quantity, 0);
-      const totalPrice = state.cart.reduce((sum, c) => sum + (c.price * c.quantity), 0);
+      const badge = document.getElementById('cart-badge-count');
       
-      document.getElementById('total-count').innerText = totalQty;
-      document.getElementById('total-price').innerText = totalPrice.toLocaleString();
+      if (totalQty > 0) {
+        badge.innerText = totalQty;
+        badge.style.display = 'flex'; // 1点以上でバッジ出現・点滅開始
+      } else {
+        badge.style.display = 'none'; // 0点なら完全に隠す
+      }
     }
 
     function openCartModal() {
@@ -867,19 +939,26 @@
 
     function removeFromCart(index) {
       state.cart.splice(index, 1);
-      updateCartTotalCount();
+      updateCartBadge();
       openCartModal();
     }
 
+    /* 注文履歴の取得、および履歴内合計金額のリアルタイム集計 */
     async function openHistoryModal() {
       const container = document.getElementById('history-list-items');
+      const banner = document.getElementById('section-guest-select');
+      const bannerArea = document.getElementById('history-total-banner-area');
+      const totalDisplay = document.getElementById('history-cumulative-total');
+      
       container.innerHTML = '<p style="text-align:center; color:#888; padding:15px 0;">最新状態を取得中...</p>';
+      bannerArea.style.display = 'none'; // 読み込み中はバナーを隠す
       document.getElementById('history-modal').style.display = 'flex';
 
       try {
         const res = await fetch(`${GAS_URL}?mode=kitchen`);
         const data = await res.json();
         
+        // 当該卓の注文履歴を抽出
         const currentTableOrders = (data.orders || []).filter(o => String(o.tableId).trim() === String(tableId).trim());
 
         container.innerHTML = '';
@@ -889,11 +968,19 @@
           return;
         }
 
+        // これまでの合計金額（売上累計）の集計ロジック
+        let cumulativeTotal = 0;
+
         currentTableOrders.reverse().forEach((item) => {
           const row = document.createElement('div');
           row.className = 'cart-item-row';
           const cleanName = item.menuName.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '');
           
+          // 単価と数量を掛け合わせて累計に加算
+          const itemPrice = Number(item.price) || 0;
+          const itemQty = Number(item.quantity) || 0;
+          cumulativeTotal += (itemPrice * itemQty);
+
           let statusLabel = '';
           if (item.status === '提供済' || item.status === '提供済み') {
             statusLabel = '<span style="color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">提供済</span>';
@@ -906,10 +993,14 @@
               <div class="cart-item-name">${cleanName}</div>
               <div class="cart-item-price-label" style="margin-top: 3px;">${statusLabel} <span style="color:#999; margin-left:5px;">${item.time}</span></div>
             </div>
-            <div style="font-weight: bold; color: #333;">${item.quantity} 点</div>
+            <div style="font-weight: bold; color: #333;">${itemQty} 点</div>
           `;
           container.appendChild(row);
         });
+
+        // 集計した合計金額をバナーにセットして表示
+        totalDisplay.innerText = `${cumulativeTotal.toLocaleString()} 円`;
+        bannerArea.style.display = 'block';
 
       } catch (e) {
         console.error(e);
@@ -917,7 +1008,6 @@
       }
     }
 
-    /* 雰囲気に合わせたカスタムポップアップ通知の表示関数 */
     function showCustomToast(isSuccess, title, message) {
       const overlay = document.getElementById('toast-popup');
       const iconArea = document.getElementById('toast-icon-area');
@@ -925,10 +1015,10 @@
       const msgArea = document.getElementById('toast-msg-area');
 
       if (isSuccess) {
-        iconArea.innerHTML = "🍵"; // 成功の和風和みアイコン
+        iconArea.innerHTML = "🍵";
         iconArea.style.color = "#4caf50";
       } else {
-        iconArea.innerHTML = "⚠️"; // エラーアイコン
+        iconArea.innerHTML = "⚠️";
         iconArea.style.color = "#d32f2f";
       }
 
@@ -936,7 +1026,6 @@
       msgArea.innerText = message;
       overlay.style.display = 'flex';
 
-      // 2.5秒後に自動で閉じる
       setTimeout(() => {
         overlay.style.display = 'none';
       }, 2500);
@@ -959,10 +1048,9 @@
         const result = await response.json();
 
         if (result.status === 'success') {
-          // ブラウザ標準のalertを廃止し、和モダン調のトーストに変更
           showCustomToast(true, 'ご注文を承りました', '厨房へ伝票を送信しました。お料理の到着までしばらくお待ちください。');
           state.cart = [];
-          updateCartTotalCount();
+          updateCartBadge();
           closeModal('cart-modal');
         } else {
           showCustomToast(false, '注文送信エラー', result.message);
