@@ -8,16 +8,22 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
     body { background-color: #f5f5f5; color: #333; padding-bottom: 80px; overflow-x: hidden; min-height: 100vh; }
     
-    header { background-color: #333; color: #fff; padding: 15px; text-align: center; position: fixed; top: 0; left: 0; right: 0; height: 75px; z-index: 110; }
-    .header-title { font-size: 1.2rem; font-weight: bold; }
-    .table-badge { display: inline-block; background: #e0e0e0; color: #333; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-top: 5px; }
+    /* 【修正】情報追加に伴い、ヘッダーの高さを 75px から 85px に拡張 */
+    header { background-color: #333; color: #fff; padding: 10px 15px; text-align: center; position: fixed; top: 0; left: 0; right: 0; height: 85px; z-index: 110; }
+    .header-title { font-size: 1.1rem; font-weight: bold; }
+    .header-status-bar { display: flex; justify-content: center; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+    .table-badge { display: inline-block; background: #e0e0e0; color: #333; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+    /* 【復活】人数・開始時間バッジのスタイル */
+    .status-badge { display: inline-block; background: #555; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
     
-    .category-nav { display: flex; overflow-x: auto; background: #fff; border-bottom: 1px solid #ccc; position: fixed; top: 75px; left: 0; right: 0; height: 48px; z-index: 100; }
+    /* 【修正】ヘッダー拡張(85px) ＋ カテゴリーナビ(48px) ＝ 計133px 分の位置にナビを配置 */
+    .category-nav { display: flex; overflow-x: auto; background: #fff; border-bottom: 1px solid #ccc; position: fixed; top: 85px; left: 0; right: 0; height: 48px; z-index: 100; }
     .category-nav::-webkit-scrollbar { display: none; }
     .category-tab { flex: 0 0 auto; padding: 14px 20px; color: #666; font-weight: bold; border-bottom: 3px solid transparent; cursor: pointer; font-size: 0.95rem; line-height: 1; }
     .category-tab.active { color: #d32f2f; border-bottom-color: #d32f2f; }
     
-    .menu-container { padding: 10px; max-width: 1000px; margin: 133px auto 0 auto; min-height: calc(100vh - 213px); transition: transform 0.2s ease-out, opacity 0.2s ease-out; display: grid; grid-template-columns: 1fr; gap: 10px; align-content: start; }
+    /* 【修正】コンテンツ開始位置（マージン）を 133px ＋ 余白10px ＝ 143px に調整 */
+    .menu-container { padding: 10px; max-width: 1000px; margin: 143px auto 0 auto; min-height: calc(100vh - 233px); transition: transform 0.2s ease-out, opacity 0.2s ease-out; display: grid; grid-template-columns: 1fr; gap: 10px; align-content: start; }
     
     .menu-card { background: #fff; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; display: flex; height: 100px; }
     .menu-img { width: auto; height: 100%; aspect-ratio: 4 / 3; object-fit: cover; background-color: #eee; flex-shrink: 0; }
@@ -78,7 +84,11 @@
 
   <header>
     <div class="header-title">注文アプリ</div>
-    <div class="table-badge"><span id="display-table-id">--</span> 番卓</div>
+    <div class="header-status-bar">
+      <div class="table-badge"><span id="display-table-id">--</span> 番卓</div>
+      <div class="status-badge" id="display-guest-badge" style="display:none;"><span id="display-guest-count">--</span> 名様</div>
+      <div class="status-badge" id="display-time-badge" style="display:none;">開始 <span id="display-start-time">--:--</span></div>
+    </div>
   </header>
 
   <nav class="category-nav" id="category-bar"></nav>
@@ -197,10 +207,32 @@
         document.getElementById('customer-modal').style.display = 'flex';
         document.getElementById('section-wifi-connect').style.display = 'none';
         document.getElementById('section-guest-select').style.display = 'block';
+        // すでにURLにパラメータが入っている場合の再レンダリング処理
+        updateHeaderStatusBadges();
       }
       updateCartBadge();
       setupSwipeEvents();
     });
+
+    /* 【復活】URLパラメータを読み込んでヘッダーのバッジ表示を更新する関数 */
+    function updateHeaderStatusBadges() {
+      const num = urlParams.get('num');
+      const time = urlParams.get('time');
+      
+      if (num) {
+        document.getElementById('display-guest-count').innerText = num;
+        document.getElementById('display-guest-badge').style.display = 'inline-block';
+      } else {
+        document.getElementById('display-guest-badge').style.display = 'none';
+      }
+      
+      if (time) {
+        document.getElementById('display-start-time').innerText = decodeURIComponent(time);
+        document.getElementById('display-time-badge').style.display = 'inline-block';
+      } else {
+        document.getElementById('display-time-badge').style.display = 'none';
+      }
+    }
 
     function setupSwipeEvents() {
       const menuList = document.getElementById('menu-list');
@@ -230,6 +262,9 @@
         const now = new Date(); const timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
         urlParams.set('num', guestCount); urlParams.set('time', encodeURIComponent(timeStr));
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+        
+        // 【復活】確定した情報をヘッダーバッジに同期反映
+        updateHeaderStatusBadges();
         fetchMenus();
       }
       closeModal('customer-modal');
@@ -257,15 +292,11 @@
       scrollToActiveTab();
     }
 
-    /* 【修正】タブ切り替え時にスクロール位置を最上部にリセットする処理を追加 */
     function switchCategory(cat) {
       state.currentCategory = cat;
       document.querySelectorAll('.category-tab').forEach(t => { if(t.innerText === cat) t.classList.add('active'); else t.classList.remove('active'); });
       scrollToActiveTab(); 
-      
-      // 切り替えと同時に最上部までスムーズにスクロールバック
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      
       renderMenuList();
     }
 
