@@ -920,7 +920,7 @@
       openCartModal();
     }
 
-    /* 注文履歴の取得、および高度な合計金額自動集計ロジック */
+    /* 注文履歴の取得、および超防衛的な合計金額集計ロジック */
     async function openHistoryModal() {
       const container = document.getElementById('history-list-items');
       const bannerArea = document.getElementById('history-total-banner-area');
@@ -948,27 +948,42 @@
         currentTableOrders.reverse().forEach((item) => {
           const row = document.createElement('div');
           row.className = 'cart-item-row';
-          const cleanName = item.menuName.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '');
           
-          /* 防衛的集計処理：複数の想定されるキー名から金額フィールドを探して抽出 */
-          let rawPrice = item.price || item.Price || item.amount || item.totalPrice || item.price_total || 0;
+          // 表示用に改行タグやトリミングをクリア
+          const cleanName = item.menuName.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '').trim();
           
-          // 文字列（カンマや「円」など）が含まれている場合を考慮し、クレンジングして数値化
+          // オプション表記（例: "生ビール [大]"）を考慮し、前方一致でマスタから純粋な単価を検索する（超防衛策）
+          const matchedMenu = state.allMenus.find(m => cleanName.startsWith(m.name.trim()));
+          let fallbackUnitPrice = matchedMenu ? Number(matchedMenu.price) : 0;
+
+          // サーバー（GAS）から送られてくる可能性のあるすべての価格キーをチェック
+          let rawPrice = item.price || item.Price || item.PRICE || item.amount || item.totalPrice || 0;
+          
           if (typeof rawPrice === 'string') {
             rawPrice = rawPrice.replace(/[,\s円¥]/g, '');
           }
-          const parsedPrice = Number(rawPrice) || 0;
+          let parsedPrice = Number(rawPrice) || 0;
           const itemQty = Number(item.quantity) || Number(item.qty) || 0;
 
-          // スプレッドシート側のデータが最初から「合計（単価×数量）」の状態で入っているか、単価かを簡易判定
-          // 注文履歴配列オブジェクトの仕様に合わせる
-          if (item.price || item.Price) {
-            // 単価オブジェクトの構造として集計
-            cumulativeTotal += (parsedPrice * itemQty);
+          // 金額の確定
+          let itemRowTotal = 0;
+          if (parsedPrice > 0) {
+            // GAS側から何らかの有効な数値が取れた場合
+            // それが「単価」か「行合計（単価×数量）」かを判定（極端に大きい場合は行合計とみなす）
+            if (matchedMenu && parsedPrice === fallbackUnitPrice * itemQty) {
+              itemRowTotal = parsedPrice;
+            } else if (matchedMenu && parsedPrice === fallbackUnitPrice) {
+              itemRowTotal = parsedPrice * itemQty;
+            } else {
+              // 判定不能な場合は単価として扱い数量を掛ける
+              itemRowTotal = parsedPrice * itemQty;
+            }
           } else {
-            // 単価キーがなく、最初から行合計が入っていると推測される場合はそのまま加算
-            cumulativeTotal += parsedPrice;
+            // GAS側から価格が取れなかった（0だった）場合、ローカルマスタから逆引きして計算
+            itemRowTotal = fallbackUnitPrice * itemQty;
           }
+
+          cumulativeTotal += itemRowTotal;
 
           let statusLabel = '';
           if (item.status === '提供済' || item.status === '提供済み') {
@@ -987,7 +1002,7 @@
           container.appendChild(row);
         });
 
-        // 割り出された累計金額を表示
+        // 計算が完了した累計金額を表示
         totalDisplay.innerText = `${cumulativeTotal.toLocaleString()} 円`;
         bannerArea.style.display = 'block';
 
@@ -1015,9 +1030,7 @@
       msgArea.innerText = message;
       overlay.style.display = 'flex';
 
-      setTimeout(() => {
-        overlay.style.display = 'none';
-      }, 2500);
+      setTimeout(() => { overlay.style.display = 'none'; }, 2500);
     }
 
     async function sendBulkOrder() {
