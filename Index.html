@@ -19,10 +19,13 @@
     .menu-img { width: 100px; height: 100px; object-fit: cover; background-color: #eee; flex-shrink: 0; }
     .menu-details { padding: 10px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; min-width: 0; }
     .menu-name { font-size: 0.95rem; font-weight: bold; color: #000; }
-    .menu-meta { display: flex; justify-content: space-between; align-items: flex-end; }
+    
+    /* 元の綺麗なレイアウトを維持するスタイル */
+    .menu-meta { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
     .menu-price { font-size: 1.1rem; font-weight: bold; color: #d32f2f; }
     .menu-price::after { content: " 円"; font-size: 0.8rem; color: #666; }
     .action-area { display: flex; align-items: center; gap: 5px; }
+    
     .qty-btn { width: 30px; height: 30px; background-color: #f0f0f0; color: #333; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; user-select: none; }
     .qty-btn:active { background-color: #ddd; }
     .qty-display { min-width: 24px; text-align: center; font-size: 1rem; font-weight: bold; }
@@ -169,7 +172,6 @@
   <div id="toast-popup" class="toast-overlay"><div class="toast-card"><div class="toast-icon" id="toast-icon-area"></div><div class="toast-title" id="toast-title-area"></div><div class="toast-msg" id="toast-msg-area"></div></div></div>
 
   <script>
-    // 【重要】新しくデプロイしたウェブアプリURLに差し替えてください
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzvd7how1B-d5vKnCtPKSxqSpwyx-pZsHwOv6tm1YFHOt-HTuhXnaMrnoTJ6Wrx75nv9w/exec";
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -258,6 +260,7 @@
 
     function scrollToActiveTab() { const activeTab = document.querySelector('.category-tab.active'); if (activeTab) activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
 
+    // 【修正箇所】元の美しい左右均等（価格左・ボタン右寄せ）に完全復元
     function renderMenuList() {
       const listContainer = document.getElementById('menu-list'); listContainer.innerHTML = '';
       const filtered = state.allMenus.filter(m => m.category === state.currentCategory);
@@ -282,7 +285,10 @@
           <img src="${imgSrc}" class="menu-img" alt="${item.name}" onerror="this.src='data:image/svg+xml;utf8,<svg width=%22100%22 height=%22100%22><rect width=%22100%22 height=%22100%22 fill=%22%23eee%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23aaa%22 font-size=%2212%22>画像なし</text></svg>';">
           <div class="menu-details">
             <div class="menu-name">${item.name}</div>
-            <div class="menu-meta><div class="menu-price">${Number(item.price).toLocaleString()}</div><div class="action-area">${actionHtml}</div></div>
+            <div class="menu-meta">
+              <div class="menu-price">${Number(item.price).toLocaleString()}</div>
+              <div class="action-area">${actionHtml}</div>
+            </div>
           </div>
         `;
         listContainer.appendChild(card);
@@ -347,7 +353,6 @@
       document.getElementById('history-modal').style.display = 'flex';
 
       try {
-        // 【重要】&action=history を付与して会計済以外の全件を取得
         const res = await fetch(`${GAS_URL}?mode=kitchen&action=history`);
         const data = await res.json();
         
@@ -360,7 +365,7 @@
         }
 
         let cumulativeTotal = 0;
-        checkoutBtn.style.display = 'block'; // 履歴があれば会計ボタンを出す
+        checkoutBtn.style.display = 'block';
 
         currentTableOrders.reverse().forEach((item) => {
           const row = document.createElement('div'); row.className = 'cart-item-row';
@@ -392,7 +397,7 @@
       }
     }
 
-    // 【新規】会計リクエストを処理する関数
+    // 【修正箇所】固まる（フリーズ）バグを修正した会計送信ロジック
     async function requestCheckout() {
       if (!confirm("お会計（伝票の締め処理）を要請しますか？\n※確定するとスマホの注文履歴がリセットされます。")) return;
       
@@ -401,7 +406,10 @@
       btn.innerText = "処理中...";
 
       try {
+        // GAS側へのリクエストが確実に届き、解析できるようにパラメータをURLに付与
         const postUrl = `${GAS_URL}?action=checkout&tableId=${encodeURIComponent(tableId)}`;
+        
+        // POST送信の実行
         const response = await fetch(postUrl, { method: 'POST' });
         const result = await response.json();
 
@@ -409,12 +417,12 @@
           showCustomToast(true, 'お会計の受付完了', '伝票の処理が完了しました。レジカウンターまでお越しください。');
           closeModal('history-modal');
         } else {
-          alert("会計処理エラー: " + result.message);
-          btn.disabled = false;
-          btn.innerText = "お会計に進む";
+          alert("会計処理エラー: " + (result.message || "予期せぬエラーが発生しました"));
         }
       } catch (err) {
-        alert("通信失敗。電波状況を確認してください。");
+        alert("通信に失敗したか、処理がタイムアウトしました。スプレッドシートをご確認ください。");
+      } finally {
+        // 成功失敗に関わらずボタンの状態を戻し、フリーズを防止
         btn.disabled = false;
         btn.innerText = "お会計に進む";
       }
