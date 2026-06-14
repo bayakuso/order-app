@@ -37,7 +37,6 @@
     .add-cart-btn.has-option { background-color: #666; }
     @media screen and (orientation: landscape) and (min-width: 560px), screen and (min-width: 768px) { .menu-container { grid-template-columns: 1fr 1fr; } }
     
-    /* 【修正】解像度に合わせて伸縮するフッターレイアウト */
     .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #333; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; z-index: 110; gap: 8px; }
     .cart-bar-left { color: #ccc; font-size: 0.8rem; font-weight: bold; letter-spacing: 0px; white-space: nowrap; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; }
     .cart-actions { display: flex; gap: 8px; flex-shrink: 0; }
@@ -296,7 +295,7 @@
 
     function scrollToActiveTab() { const activeTab = document.querySelector('.category-tab.active'); if (activeTab) activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
 
-    UX_IMAGE_FALLBACK = NO_IMAGE_SVG;
+    const UX_IMAGE_FALLBACK = NO_IMAGE_SVG;
     function renderMenuList() {
       const listContainer = document.getElementById('menu-list'); listContainer.innerHTML = '';
       const filtered = state.allMenus.filter(m => m.category === state.currentCategory);
@@ -485,7 +484,7 @@
         const result = await response.json();
         if (result.status === 'success') { showCustomToast(true, 'ご注文を承りました', '厨房へ伝票を送信しました。'); state.cart = []; updateCartBadge(); closeModal('cart-modal'); }
         else { showCustomToast(false, '注文エラー', result.message); btn.disabled = false; btn.innerText = "注文を確定する"; }
-      } catch (err) fn { showCustomToast(false, '通信失敗', 'ネットワーク環境をご確認ください。'); btn.disabled = false; btn.innerText = "注文を確定する"; }
+      } catch (err) { showCustomToast(false, '通信失敗', 'ネットワーク環境をご確認ください。'); btn.disabled = false; btn.innerText = "注文を確定する"; }
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
