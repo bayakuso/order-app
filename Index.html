@@ -15,12 +15,15 @@
     .category-tab { flex: 0 0 auto; padding: 12px 20px; color: #666; font-weight: bold; border-bottom: 3px solid transparent; cursor: pointer; }
     .category-tab.active { color: #d32f2f; border-bottom-color: #d32f2f; }
     .menu-container { padding: 10px; max-width: 1000px; margin: 0 auto; min-height: calc(100vh - 120px); transition: transform 0.2s ease-out, opacity 0.2s ease-out; display: grid; grid-template-columns: 1fr; gap: 10px; align-content: start; }
+    
+    /* メニューカード全体の高さを画像（4:3）に合わせて自動調整 */
     .menu-card { background: #fff; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; display: flex; height: 100px; }
-    .menu-img { width: 100px; height: 100px; object-fit: cover; background-color: #eee; flex-shrink: 0; }
+    
+    /* 【修正】画像表示を確実に「4:3」に固定し、切り抜き（cover）表示にする */
+    .menu-img { width: auto; height: 100%; aspect-ratio: 4 / 3; object-fit: cover; background-color: #eee; flex-shrink: 0; }
+    
     .menu-details { padding: 10px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; min-width: 0; }
     .menu-name { font-size: 0.95rem; font-weight: bold; color: #000; }
-    
-    /* 元の綺麗なレイアウトを維持するスタイル */
     .menu-meta { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
     .menu-price { font-size: 1.1rem; font-weight: bold; color: #d32f2f; }
     .menu-price::after { content: " 円"; font-size: 0.8rem; color: #666; }
@@ -181,6 +184,9 @@
     let state = { allMenus: [], categories: [], currentCategory: '', cart: [] };
     let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0, currentModalQty = 1;
 
+    // 【新設】画像がない・またはエラーの際に読み込む4:3のブランク用インラインSVGデータ
+    const NO_IMAGE_SVG = "data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22 viewBox=%220 0 400 300%22><rect width=%22400%22 height=%22300%22 fill=%22%23e0e0e0%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23888888%22 font-family=%22sans-serif%22 font-size=%2224%22 font-weight=%22bold%22>No Image</text></svg>";
+
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('display-table-id').innerText = tableId;
       if (isViewer) {
@@ -260,7 +266,6 @@
 
     function scrollToActiveTab() { const activeTab = document.querySelector('.category-tab.active'); if (activeTab) activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
 
-    // 【修正箇所】元の美しい左右均等（価格左・ボタン右寄せ）に完全復元
     function renderMenuList() {
       const listContainer = document.getElementById('menu-list'); listContainer.innerHTML = '';
       const filtered = state.allMenus.filter(m => m.category === state.currentCategory);
@@ -269,7 +274,15 @@
       
       filtered.forEach(item => {
         const card = document.createElement('div'); card.className = 'menu-card';
-        const imgSrc = item.image_base64 || item.image || '';
+        
+        // 【修正】画像未設定（空欄や "undefined"）を判定し、ブランク用SVG（NO_IMAGE_SVG）を代入
+        let imgSrc = (item.image_base64 && item.image_base64.trim() !== "" && item.image_base64 !== "undefined") ? item.image_base64 : 
+                     (item.image && item.image.trim() !== "" && item.image !== "undefined") ? item.image : "";
+        
+        if (!imgSrc) {
+          imgSrc = NO_IMAGE_SVG;
+        }
+
         const qtyId = `qty-${item.menu_id}`;
         const rawOptionValue = item.options || item.option || '';
 
@@ -281,8 +294,9 @@
           actionHtml = `<button class="qty-btn" onclick="inlineChangeQty('${qtyId}', -1)">−</button><span class="qty-display" id="${qtyId}">1</span><button class="qty-btn" onclick="inlineChangeQty('${qtyId}', 1)">+</button><button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${qtyId}')" style="margin-left:5px;">追加</button>`;
         }
 
+        // 【修正】onerror属性で画像読み込みエラーが起きた際もNO_IMAGE_SVGを出すようにフォールバック
         card.innerHTML = `
-          <img src="${imgSrc}" class="menu-img" alt="${item.name}" onerror="this.src='data:image/svg+xml;utf8,<svg width=%22100%22 height=%22100%22><rect width=%22100%22 height=%22100%22 fill=%22%23eee%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23aaa%22 font-size=%2212%22>画像なし</text></svg>';">
+          <img src="${imgSrc}" class="menu-img" alt="${item.name}" onerror="this.onerror=null; this.src='${NO_IMAGE_SVG}';">
           <div class="menu-details">
             <div class="menu-name">${item.name}</div>
             <div class="menu-meta">
@@ -397,7 +411,6 @@
       }
     }
 
-    // 【修正箇所】固まる（フリーズ）バグを修正した会計送信ロジック
     async function requestCheckout() {
       if (!confirm("お会計（伝票の締め処理）を要請しますか？\n※確定するとスマホの注文履歴がリセットされます。")) return;
       
@@ -406,10 +419,7 @@
       btn.innerText = "処理中...";
 
       try {
-        // GAS側へのリクエストが確実に届き、解析できるようにパラメータをURLに付与
         const postUrl = `${GAS_URL}?action=checkout&tableId=${encodeURIComponent(tableId)}`;
-        
-        // POST送信の実行
         const response = await fetch(postUrl, { method: 'POST' });
         const result = await response.json();
 
@@ -422,7 +432,6 @@
       } catch (err) {
         alert("通信に失敗したか、処理がタイムアウトしました。スプレッドシートをご確認ください。");
       } finally {
-        // 成功失敗に関わらずボタンの状態を戻し、フリーズを防止
         btn.disabled = false;
         btn.innerText = "お会計に進む";
       }
