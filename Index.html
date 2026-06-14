@@ -195,17 +195,20 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('display-table-id').innerText = tableId;
+      
+      /* 出し分け条件の修正 */
       if (isViewer) {
         document.getElementById('customer-modal').style.display = 'flex';
         document.getElementById('section-wifi-connect').style.display = 'block';
         document.getElementById('section-guest-select').style.display = 'none';
-        fetchMenus();
       } else {
         document.getElementById('customer-modal').style.display = 'flex';
         document.getElementById('section-wifi-connect').style.display = 'none';
         document.getElementById('section-guest-select').style.display = 'block';
-        updateHeaderStatusBadges();
       }
+      
+      updateHeaderStatusBadges();
+      fetchMenus();
       updateCartBadge();
       setupSwipeEvents();
     });
@@ -258,7 +261,6 @@
         urlParams.set('num', guestCount); urlParams.set('time', encodeURIComponent(timeStr));
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
         updateHeaderStatusBadges();
-        fetchMenus();
       }
       closeModal('customer-modal');
     }
