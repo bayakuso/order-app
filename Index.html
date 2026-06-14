@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>御料理・御酒 注文処</title>
-   <style>
+  <title>注文アプリ</title>
+  <style>
     * {
       box-sizing: border-box;
       margin: 0;
@@ -17,6 +17,7 @@
       color: #333;
       padding-bottom: 80px;
       overflow-x: hidden; /* スワイプ時の画面ハミ出し防止 */
+      min-height: 100vh;  /* 画面全体の縦幅を確保してスワイプ領域を広げる */
     }
 
     /* 上部ヘッダー */
@@ -75,11 +76,12 @@
       border-bottom-color: #d32f2f;
     }
 
-    /* メニューリスト（スワイプアニメーション用設定を追加） */
+    /* メニューリスト */
     .menu-container {
       padding: 10px;
       max-width: 600px;
       margin: 0 auto;
+      min-height: calc(100vh - 120px); /* メニューが少ない、または無い場合もコンテナ枠を広げてスワイプ可能にする */
       transition: transform 0.2s ease-out, opacity 0.2s ease-out;
     }
 
@@ -209,7 +211,7 @@
       color: #fff;
     }
 
-    /* モーダル */
+    /* モーダル基本設定 */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -251,7 +253,7 @@
     }
 
     .modal-body {
-      padding: 15px;
+      padding: 20px;
       overflow-y: auto;
       flex-grow: 1;
     }
@@ -312,6 +314,7 @@
       border: 1px solid #333;
       border-radius: 4px;
       background: #fff;
+      text-align: center;
     }
     
     .wifi-connect-box {
@@ -362,7 +365,7 @@
     </div>
   </div>
 
-  <div id="customer-modal" class="modal-overlay" style="display:block;">
+  <div id="customer-modal" class="modal-overlay" style="display:flex;">
     <div class="modal-sheet" style="text-align:center;">
       <div class="modal-header">
         <div style="width:100%; text-align:center;">ご案内</div>
@@ -448,12 +451,11 @@
 
     let state = {
       allMenus: [],
-      categories: [], // カテゴリー一覧の保持用
-      currentCategory: '', // 初期値は空、データ取得時に最初のカテゴリーを設定
+      categories: [],
+      currentCategory: '',
       cart: []
     };
 
-    // スワイプ操作用の変数
     let touchStartX = 0;
     let touchStartY = 0;
     let touchEndX = 0;
@@ -463,62 +465,79 @@
       document.getElementById('display-table-id').innerText = tableId;
 
       if (isViewer) {
-        document.getElementById('customer-modal').style.display = 'block';
+        document.getElementById('customer-modal').style.display = 'flex';
         document.getElementById('section-wifi-connect').style.display = 'block';
         document.getElementById('section-guest-select').style.display = 'none';
         fetchMenus();
       } else {
-        document.getElementById('customer-modal').style.display = 'block';
+        document.getElementById('customer-modal').style.display = 'flex';
         document.getElementById('section-wifi-connect').style.display = 'none';
         document.getElementById('section-guest-select').style.display = 'block';
       }
       updateCartTotalCount();
-      setupSwipeEvents(); // スワイプイベントの登録
+      setupSwipeEvents();
     });
 
+    // スワイプイベントのターゲットをdocument全体に変更し、メニュー外の空白でも反応可能にする
     function setupSwipeEvents() {
       const menuList = document.getElementById('menu-list');
       
-      menuList.addEventListener('touchstart', (e) => {
+      document.addEventListener('touchstart', (e) => {
+        // モーダルが開いている間はスワイプによるカテゴリ切り替えを無視する
+        if (isModalActive()) return;
+
         touchStartX = e.changedTouches[0].screenX;
         touchStartY = e.changedTouches[0].screenY;
       }, { passive: true });
 
-      menuList.addEventListener('touchmove', (e) => {
-        // 左右スワイプを滑らかに見せるための簡易エフェクト（任意）
+      document.addEventListener('touchmove', (e) => {
+        if (isModalActive()) return;
+
         let moveX = e.changedTouches[0].screenX - touchStartX;
         let moveY = e.changedTouches[0].screenY - touchStartY;
-        // 縦スクロールの邪魔をしないよう、横移動が強い場合のみ要素を少しずらす
+        
+        // 縦スクロールの邪魔を避けるため、横の動きが優勢な場合のみメニューコンテナを動かす
         if (Math.abs(moveX) > Math.abs(moveY) && Math.abs(moveX) < 80) {
           menuList.style.transform = `translateX(${moveX}px)`;
           menuList.style.opacity = `${1 - Math.abs(moveX)/150}`;
         }
       }, { passive: true });
 
-      menuList.addEventListener('touchend', (e) => {
+      document.addEventListener('touchend', (e) => {
+        if (isModalActive()) return;
+
         touchEndX = e.changedTouches[0].screenX;
         touchEndY = e.changedTouches[0].screenY;
+        
+        // メニューの変形状態をリセット
         menuList.style.transform = '';
         menuList.style.opacity = '';
+        
         handleSwipeGesture();
       }, { passive: true });
+    }
+
+    // 現在画面に何かしらのモーダル（案内、カート、履歴など）が露出しているかをチェックする
+    function isModalActive() {
+      const modalIds = ['customer-modal', 'cart-modal', 'history-modal', 'option-modal'];
+      return modalIds.some(id => {
+        const el = document.getElementById(id);
+        return el && el.style.display === 'flex';
+      });
     }
 
     function handleSwipeGesture() {
       const deltaX = touchEndX - touchStartX;
       const deltaY = touchEndY - touchStartY;
       
-      // 縦スクロールと誤判定しないよう、横スワイプのしきい値を設定（最低60pxの移動）
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60) {
         const currentIndex = state.categories.indexOf(state.currentCategory);
         
         if (deltaX < 0) {
-          // 左スワイプ ＝ 次のカテゴリーへ（右へ移動）
           if (currentIndex < state.categories.length - 1) {
             switchCategory(state.categories[currentIndex + 1]);
           }
         } else {
-          // 右スワイプ ＝ 前のカテゴリーへ（左へ移動）
           if (currentIndex > 0) {
             switchCategory(state.categories[currentIndex - 1]);
           }
@@ -546,10 +565,8 @@
         const data = await response.json();
         state.allMenus = data;
         
-        // 「すべて」を除外し、存在する固有のカテゴリーのみを抽出して保持
         state.categories = [...new Set(state.allMenus.map(m => m.category).filter(Boolean))];
         
-        // 初期カテゴリーを先頭の項目に設定
         if (state.categories.length > 0) {
           state.currentCategory = state.categories[0];
         }
@@ -578,7 +595,6 @@
     function switchCategory(cat) {
       state.currentCategory = cat;
       
-      // タブの表示状態を更新
       const tabs = document.querySelectorAll('.category-tab');
       tabs.forEach(t => {
         if(t.innerText === cat) {
@@ -592,7 +608,6 @@
       renderMenuList();
     }
 
-    // アクティブなタブが画面外に隠れないよう自動スクロール
     function scrollToActiveTab() {
       const activeTab = document.querySelector('.category-tab.active');
       if (activeTab) {
@@ -604,7 +619,6 @@
       const listContainer = document.getElementById('menu-list');
       listContainer.innerHTML = '';
 
-      // 現在選択されている特定のカテゴリーのみを抽出
       const filtered = state.allMenus.filter(m => m.category === state.currentCategory);
 
       if (filtered.length === 0) {
@@ -612,7 +626,6 @@
         return;
       }
 
-      // 表示切り替え時のフェードイン演出（スワイプ感の向上）
       listContainer.style.opacity = 0;
       
       filtered.forEach(item => {
