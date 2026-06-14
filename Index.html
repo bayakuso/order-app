@@ -931,7 +931,7 @@
       document.getElementById('history-modal').style.display = 'flex';
 
       try {
-        const res = await fetch(`${GAS_URL}?mode=kitchen`);
+        const res = await fetch(`${GAS_URL}?mode=kitchen&action=history`);
         const data = await res.json();
         
         const currentTableOrders = (data.orders || []).filter(o => String(o.tableId).trim() === String(tableId).trim());
