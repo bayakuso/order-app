@@ -76,20 +76,23 @@
       border-bottom-color: #d32f2f;
     }
 
-    /* メニューリスト */
+    /* メニューリスト（基本は縦1列、横画面で2列に切り替えるためGridを採用） */
     .menu-container {
       padding: 10px;
-      max-width: 600px;
+      max-width: 1000px; /* 横2列時の幅に合わせて上限を拡張 */
       margin: 0 auto;
-      min-height: calc(100vh - 120px); /* メニューが少ない、または無い場合もコンテナ枠を広げてスワイプ可能にする */
+      min-height: calc(100vh - 120px);
       transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+      display: grid;
+      grid-template-columns: 1fr; /* デフォルトは1列 */
+      gap: 10px;
+      align-content: start;
     }
 
     .menu-card {
       background: #fff;
       border: 1px solid #ddd;
       border-radius: 5px;
-      margin-bottom: 10px;
       overflow: hidden;
       display: flex;
       height: 100px;
@@ -159,6 +162,13 @@
     
     .add-cart-btn.has-option {
       background-color: #666;
+    }
+
+    /* 画面を横にしたとき（Landscape）または画面幅が広い場合のレスポンシブ設定 */
+    @media screen and (orientation: landscape) and (min-width: 560px), screen and (min-width: 768px) {
+      .menu-container {
+        grid-template-columns: 1fr 1fr; /* 横2列表示 */
+      }
     }
 
     /* 下部固定バー */
@@ -478,12 +488,10 @@
       setupSwipeEvents();
     });
 
-    // スワイプイベントのターゲットをdocument全体に変更し、メニュー外の空白でも反応可能にする
     function setupSwipeEvents() {
       const menuList = document.getElementById('menu-list');
       
       document.addEventListener('touchstart', (e) => {
-        // モーダルが開いている間はスワイプによるカテゴリ切り替えを無視する
         if (isModalActive()) return;
 
         touchStartX = e.changedTouches[0].screenX;
@@ -496,7 +504,6 @@
         let moveX = e.changedTouches[0].screenX - touchStartX;
         let moveY = e.changedTouches[0].screenY - touchStartY;
         
-        // 縦スクロールの邪魔を避けるため、横の動きが優勢な場合のみメニューコンテナを動かす
         if (Math.abs(moveX) > Math.abs(moveY) && Math.abs(moveX) < 80) {
           menuList.style.transform = `translateX(${moveX}px)`;
           menuList.style.opacity = `${1 - Math.abs(moveX)/150}`;
@@ -509,7 +516,6 @@
         touchEndX = e.changedTouches[0].screenX;
         touchEndY = e.changedTouches[0].screenY;
         
-        // メニューの変形状態をリセット
         menuList.style.transform = '';
         menuList.style.opacity = '';
         
@@ -517,7 +523,6 @@
       }, { passive: true });
     }
 
-    // 現在画面に何かしらのモーダル（案内、カート、履歴など）が露出しているかをチェックする
     function isModalActive() {
       const modalIds = ['customer-modal', 'cart-modal', 'history-modal', 'option-modal'];
       return modalIds.some(id => {
@@ -622,7 +627,7 @@
       const filtered = state.allMenus.filter(m => m.category === state.currentCategory);
 
       if (filtered.length === 0) {
-        listContainer.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">お品書きがありません。</p>';
+        listContainer.innerHTML = '<p style="text-align:center;color:#999;padding:20px;grid-column: 1 / -1;">お品書きがありません。</p>';
         return;
       }
 
