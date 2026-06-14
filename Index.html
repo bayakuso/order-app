@@ -16,8 +16,8 @@
       background-color: #f5f5f5;
       color: #333;
       padding-bottom: 80px;
-      overflow-x: hidden; /* スワイプ時の画面ハミ出し防止 */
-      min-height: 100vh;  /* 画面全体の縦幅を確保してスワイプ領域を広げる */
+      overflow-x: hidden;
+      min-height: 100vh;
     }
 
     /* 上部ヘッダー */
@@ -79,12 +79,12 @@
     /* メニューリスト */
     .menu-container {
       padding: 10px;
-      max-width: 1000px; /* 横2列時の幅に合わせて上限を拡張 */
+      max-width: 1000px;
       margin: 0 auto;
       min-height: calc(100vh - 120px);
       transition: transform 0.2s ease-out, opacity 0.2s ease-out;
       display: grid;
-      grid-template-columns: 1fr; /* デフォルトは1列 */
+      grid-template-columns: 1fr;
       gap: 10px;
       align-content: start;
     }
@@ -138,14 +138,13 @@
       color: #666;
     }
 
-    /* 数量増減UIの配置エリア */
+    /* 数量増減UI */
     .action-area {
       display: flex;
       align-items: center;
       gap: 5px;
     }
 
-    /* 数量変更ボタンのスタイル */
     .qty-btn {
       width: 30px;
       height: 30px;
@@ -188,10 +187,9 @@
       background-color: #666;
     }
 
-    /* 画面を横にしたとき（Landscape）または画面幅が広い場合のレスポンシブ設定 */
     @media screen and (orientation: landscape) and (min-width: 560px), screen and (min-width: 768px) {
       .menu-container {
-        grid-template-columns: 1fr 1fr; /* 横2列表示 */
+        grid-template-columns: 1fr 1fr;
       }
     }
 
@@ -210,7 +208,6 @@
       z-index: 90;
     }
 
-    /* 左側ロゴ・文言用エリア（金額撤廃につき店舗感のある装飾に） */
     .cart-bar-left {
       color: #ccc;
       font-size: 0.9rem;
@@ -223,7 +220,6 @@
       gap: 15px;
     }
 
-    /* 通知バッジを内包するためのラッパー */
     .btn-wrapper {
       position: relative;
     }
@@ -246,7 +242,7 @@
       color: #fff;
     }
 
-    /* スマホアプリ風 通知バッジ */
+    /* 通知バッジ */
     .notification-badge {
       position: absolute;
       top: -6px;
@@ -258,7 +254,7 @@
       min-width: 18px;
       height: 18px;
       border-radius: 50%;
-      display: none; /* 初期は非表示 */
+      display: none;
       align-items: center;
       justify-content: center;
       padding: 2px;
@@ -266,7 +262,7 @@
       z-index: 95;
     }
 
-    /* 蛍のようなじんわり点滅アニメーション */
+    /* 蛍の点滅 */
     .hotaru-glow {
       animation: hotaruAnimation 2.5s infinite ease-in-out;
     }
@@ -342,7 +338,7 @@
       gap: 5px;
     }
 
-    /* 履歴内 合計金額ヘッダーのスタイル */
+    /* 履歴内合計金額表示用バナー */
     .history-total-banner {
       background-color: #fff8f2;
       border: 1px solid #f5e6d3;
@@ -434,7 +430,7 @@
       text-align: center;
     }
 
-    /* カスタム通知トーストのスタイル */
+    /* 通知トースト */
     .toast-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -646,17 +642,14 @@
       
       document.addEventListener('touchstart', (e) => {
         if (isModalActive()) return;
-
         touchStartX = e.changedTouches[0].screenX;
         touchStartY = e.changedTouches[0].screenY;
       }, { passive: true });
 
       document.addEventListener('touchmove', (e) => {
         if (isModalActive()) return;
-
         let moveX = e.changedTouches[0].screenX - touchStartX;
         let moveY = e.changedTouches[0].screenY - touchStartY;
-        
         if (Math.abs(moveX) > Math.abs(moveY) && Math.abs(moveX) < 80) {
           menuList.style.transform = `translateX(${moveX}px)`;
           menuList.style.opacity = `${1 - Math.abs(moveX)/150}`;
@@ -665,13 +658,10 @@
 
       document.addEventListener('touchend', (e) => {
         if (isModalActive()) return;
-
         touchEndX = e.changedTouches[0].screenX;
         touchEndY = e.changedTouches[0].screenY;
-        
         menuList.style.transform = '';
         menuList.style.opacity = '';
-        
         handleSwipeGesture();
       }, { passive: true });
     }
@@ -687,10 +677,8 @@
     function handleSwipeGesture() {
       const deltaX = touchEndX - touchStartX;
       const deltaY = touchEndY - touchStartY;
-      
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60) {
         const currentIndex = state.categories.indexOf(state.currentCategory);
-        
         if (deltaX < 0) {
           if (currentIndex < state.categories.length - 1) {
             switchCategory(state.categories[currentIndex + 1]);
@@ -708,7 +696,6 @@
         const guestCount = document.getElementById('modal-guest-count').value;
         const now = new Date();
         const timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
-        
         urlParams.set('num', guestCount);
         urlParams.set('time', encodeURIComponent(timeStr));
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
@@ -722,13 +709,10 @@
         const response = await fetch(GAS_URL);
         const data = await response.json();
         state.allMenus = data;
-        
         state.categories = [...new Set(state.allMenus.map(m => m.category).filter(Boolean))];
-        
         if (state.categories.length > 0) {
           state.currentCategory = state.categories[0];
         }
-        
         buildCategoryBar();
         renderMenuList();
       } catch (err) {
@@ -739,7 +723,6 @@
     function buildCategoryBar() {
       const bar = document.getElementById('category-bar');
       bar.innerHTML = '';
-      
       state.categories.forEach(cat => {
         const tab = document.createElement('div');
         tab.className = `category-tab ${state.currentCategory === cat ? 'active' : ''}`;
@@ -752,7 +735,6 @@
 
     function switchCategory(cat) {
       state.currentCategory = cat;
-      
       const tabs = document.querySelectorAll('.category-tab');
       tabs.forEach(t => {
         if(t.innerText === cat) {
@@ -761,7 +743,6 @@
           t.classList.remove('active');
         }
       });
-      
       scrollToActiveTab();
       renderMenuList();
     }
@@ -776,7 +757,6 @@
     function renderMenuList() {
       const listContainer = document.getElementById('menu-list');
       listContainer.innerHTML = '';
-
       const filtered = state.allMenus.filter(m => m.category === state.currentCategory);
 
       if (filtered.length === 0) {
@@ -789,10 +769,8 @@
       filtered.forEach(item => {
         const card = document.createElement('div');
         card.className = 'menu-card';
-
         const imgSrc = item.image_base64 || item.image || '';
         const qtyId = `qty-${item.menu_id}`;
-
         const rawOptionValue = item.options || item.option || item.Options || item.Option || item.オプション || '';
 
         let actionHtml = '';
@@ -899,16 +877,15 @@
       updateCartBadge();
     }
 
-    /* 通知バッジの点数と蛍エフェクトの制御 */
     function updateCartBadge() {
       const totalQty = state.cart.reduce((sum, c) => sum + c.quantity, 0);
       const badge = document.getElementById('cart-badge-count');
       
       if (totalQty > 0) {
         badge.innerText = totalQty;
-        badge.style.display = 'flex'; // 1点以上でバッジ出現・点滅開始
+        badge.style.display = 'flex';
       } else {
-        badge.style.display = 'none'; // 0点なら完全に隠す
+        badge.style.display = 'none';
       }
     }
 
@@ -943,22 +920,20 @@
       openCartModal();
     }
 
-    /* 注文履歴の取得、および履歴内合計金額のリアルタイム集計 */
+    /* 注文履歴の取得、および高度な合計金額自動集計ロジック */
     async function openHistoryModal() {
       const container = document.getElementById('history-list-items');
-      const banner = document.getElementById('section-guest-select');
       const bannerArea = document.getElementById('history-total-banner-area');
       const totalDisplay = document.getElementById('history-cumulative-total');
       
       container.innerHTML = '<p style="text-align:center; color:#888; padding:15px 0;">最新状態を取得中...</p>';
-      bannerArea.style.display = 'none'; // 読み込み中はバナーを隠す
+      bannerArea.style.display = 'none';
       document.getElementById('history-modal').style.display = 'flex';
 
       try {
         const res = await fetch(`${GAS_URL}?mode=kitchen`);
         const data = await res.json();
         
-        // 当該卓の注文履歴を抽出
         const currentTableOrders = (data.orders || []).filter(o => String(o.tableId).trim() === String(tableId).trim());
 
         container.innerHTML = '';
@@ -968,7 +943,6 @@
           return;
         }
 
-        // これまでの合計金額（売上累計）の集計ロジック
         let cumulativeTotal = 0;
 
         currentTableOrders.reverse().forEach((item) => {
@@ -976,10 +950,25 @@
           row.className = 'cart-item-row';
           const cleanName = item.menuName.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '');
           
-          // 単価と数量を掛け合わせて累計に加算
-          const itemPrice = Number(item.price) || 0;
-          const itemQty = Number(item.quantity) || 0;
-          cumulativeTotal += (itemPrice * itemQty);
+          /* 防衛的集計処理：複数の想定されるキー名から金額フィールドを探して抽出 */
+          let rawPrice = item.price || item.Price || item.amount || item.totalPrice || item.price_total || 0;
+          
+          // 文字列（カンマや「円」など）が含まれている場合を考慮し、クレンジングして数値化
+          if (typeof rawPrice === 'string') {
+            rawPrice = rawPrice.replace(/[,\s円¥]/g, '');
+          }
+          const parsedPrice = Number(rawPrice) || 0;
+          const itemQty = Number(item.quantity) || Number(item.qty) || 0;
+
+          // スプレッドシート側のデータが最初から「合計（単価×数量）」の状態で入っているか、単価かを簡易判定
+          // 注文履歴配列オブジェクトの仕様に合わせる
+          if (item.price || item.Price) {
+            // 単価オブジェクトの構造として集計
+            cumulativeTotal += (parsedPrice * itemQty);
+          } else {
+            // 単価キーがなく、最初から行合計が入っていると推測される場合はそのまま加算
+            cumulativeTotal += parsedPrice;
+          }
 
           let statusLabel = '';
           if (item.status === '提供済' || item.status === '提供済み') {
@@ -998,7 +987,7 @@
           container.appendChild(row);
         });
 
-        // 集計した合計金額をバナーにセットして表示
+        // 割り出された累計金額を表示
         totalDisplay.innerText = `${cumulativeTotal.toLocaleString()} 円`;
         bannerArea.style.display = 'block';
 
