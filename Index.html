@@ -1034,37 +1034,40 @@
     }
 
     async function sendBulkOrder() {
-      const btn = document.getElementById('send-order-btn');
-      btn.disabled = true;
-      btn.innerText = "送信中...";
+  const btn = document.getElementById('send-order-btn');
+  btn.disabled = true;
+  btn.innerText = "送信中...";
 
-      try {
-        const postUrl = `${GAS_URL}?action=bulk_order&tableId=${encodeURIComponent(tableId)}`;
-        const formData = new FormData();
-        formData.append('cart', JSON.stringify(state.cart));
+  try {
+    // 確実に届くように URLSearchParams 形式にビルドする
+    const params = new URLSearchParams();
+    params.append('action', 'bulk_order');
+    params.append('tableId', tableId);
+    params.append('cart', JSON.stringify(state.cart)); // カートをプレーンな文字列にして渡す
 
-        const response = await fetch(postUrl, {
-          method: 'POST',
-          body: formData
-        });
-        const result = await response.json();
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      body: params,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const result = await response.json();
 
-        if (result.status === 'success') {
-          showCustomToast(true, 'ご注文を承りました', '厨房へ伝票を送信しました。お料理の到着までしばらくお待ちください。');
-          state.cart = [];
-          updateCartBadge();
-          closeModal('cart-modal');
-        } else {
-          showCustomToast(false, '注文送信エラー', result.message);
-          btn.disabled = false;
-          btn.innerText = "注文を確定する";
-        }
-      } catch (err) {
-        showCustomToast(false, '通信失敗', 'ネットワーク環境をご確認の上、もう一度送信をお試しください。');
-        btn.disabled = false;
-        btn.innerText = "注文を確定する";
-      }
+    if (result.status === 'success') {
+      showCustomToast(true, 'ご注文を承りました', '厨房へ伝票を送信しました。お料理の到着までしばらくお待ちください。');
+      state.cart = [];
+      updateCartBadge();
+      closeModal('cart-modal');
+    } else {
+      showCustomToast(false, '注文送信エラー', result.message);
+      btn.disabled = false;
+      btn.innerText = "注文を確定する";
     }
+  } catch (err) {
+    showCustomToast(false, '通信失敗', 'ネットワーク環境をご確認の上、もう一度送信をお試しください。');
+    btn.disabled = false;
+    btn.innerText = "注文を確定する";
+  }
+}
 
     function closeModal(id) {
       document.getElementById(id).style.display = 'none';
