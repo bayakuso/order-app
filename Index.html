@@ -48,12 +48,14 @@
     .hotaru-glow { animation: hotaruAnimation 2.5s infinite ease-in-out; }
     @keyframes hotaruAnimation { 0% { opacity: 0.4; box-shadow: 0 0 2px rgba(211, 47, 47, 0.4); } 50% { opacity: 1; box-shadow: 0 0 10px rgba(211, 47, 47, 0.8), 0 0 15px rgba(211, 47, 47, 0.4); } 100% { opacity: 0.4; box-shadow: 0 0 2px rgba(211, 47, 47, 0.4); } }
     
+    /* モーダル表示構造の適正化 */
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; justify-content: center; align-items: center; padding: 10px; }
-    .modal-sheet { background: #fff; width: 100%; max-width: 400px; border-radius: 5px; overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
+    .modal-sheet { background: #fff; width: 100%; max-width: 400px; border-radius: 5px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
     .modal-header { background: #333; color: #fff; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
     .modal-close { background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; }
-    .modal-body { padding: 20px; overflow-y: auto; flex-grow: 1; }
+    .modal-body { padding: 15px 20px; overflow-y: auto; flex-grow: 1; }
     .modal-footer { padding: 10px; background: #f5f5f5; border-top: 1px solid #ddd; display: flex; justify-content: flex-end; gap: 5px; }
+    
     .history-total-banner { background-color: #fff8f2; border: 1px solid #f5e6d3; border-radius: 4px; padding: 12px; margin-bottom: 15px; text-align: center; }
     .history-total-label { font-size: 0.85rem; color: #666; margin-bottom: 2px; }
     .history-total-value { font-size: 1.4rem; font-weight: bold; color: #d32f2f; }
@@ -61,20 +63,23 @@
     .cart-item-info { flex-grow: 1; }
     .cart-item-name { font-weight: bold; }
     .cart-item-price-label { font-size: 0.8rem; color: #666; }
+    
     .option-group { margin-bottom: 10px; }
     .option-title { font-weight: bold; margin-bottom: 5px; }
     .option-label { display: block; padding: 8px; border: 1px solid #ddd; margin-bottom: 5px; border-radius: 3px; }
+    
     .guest-select-wrapper { position: relative; width: 100%; max-width: 200px; margin: 0 auto; }
     .guest-select { width: 100%; padding: 10px; font-size: 16px; font-weight: bold; border: 1px solid #333; border-radius: 4px; background: #fff; text-align: center; }
-    .wifi-connect-box { margin: 15px 0; padding: 12px; background-color: #fff; border: 1px dashed #333; border-radius: 4px; }
+    
+    .wifi-connect-box { margin: 10px 0; padding: 12px; background-color: #fff; border: 1px dashed #333; border-radius: 4px; }
     .wifi-btn { display: block; width: 100%; box-sizing: border-box; padding: 10px; background-color: #333; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; text-decoration: none; text-align: center; }
     
-    /* QRコード表示用スタイル */
-    .qr-container-box { margin: 15px 0; padding: 15px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; }
-    .qr-title { font-size: 13px; font-weight: bold; color: #333; margin-bottom: 8px; }
-    .qr-image-wrapper { display: flex; justify-content: center; margin: 10px 0; }
-    .qr-image-wrapper img { width: 140px; height: 140px; border: 1px solid #ccc; background: #fff; padding: 5px; }
-    .qr-desc { font-size: 11px; color: #666; line-height: 1.4; }
+    /* QRコード表示ボックス構造調整 */
+    .qr-container-box { margin: 10px 0; padding: 12px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; display: none; }
+    .qr-title { font-size: 13px; font-weight: bold; color: #333; margin-bottom: 6px; }
+    .qr-image-wrapper { display: flex; justify-content: center; margin: 8px 0; }
+    .qr-image-wrapper img { width: 130px; height: 130px; border: 1px solid #ccc; background: #fff; padding: 4px; display: block; }
+    .qr-desc { font-size: 11px; color: #666; line-height: 1.4; text-align: left; }
 
     .toast-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 300; display: none; justify-content: center; align-items: center; padding: 20px; }
     .toast-card { background: #fff; border-top: 4px solid #d32f2f; border-radius: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 25px 20px; text-align: center; width: 100%; max-width: 320px; animation: toastPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -116,12 +121,12 @@
     <div class="modal-sheet" style="text-align:center;">
       <div class="modal-header"><div style="width:100%; text-align:center;">ご案内</div></div>
       <div class="modal-body">
-        <div style="background-color: #fff8f8; border: 1px solid #ffcccc; border-radius: 4px; padding: 12px; margin-bottom: 15px;">
+        <div style="background-color: #fff8f8; border: 1px solid #ffcccc; border-radius: 4px; padding: 12px; margin-bottom: 12px;">
           <p style="font-size:14px; font-weight:bold; color:#d32f2f; margin-bottom:4px;">本日のお通し：特製おつまみ三品盛り</p>
           <p style="font-size:12px; color:#666; line-height:1.4;">※席料、お通しとしてお一人様**1,000円（税込）**を頂戴いたします。</p>
         </div>
         
-        <div id="section-guest-select" style="margin-bottom:20px; display:none;">
+        <div id="section-guest-select" style="margin-bottom:15px; display:none;">
           <label style="display:block;font-size:14px;margin-bottom:8px;font-weight:bold;">人数を選択してください</label>
           <div class="guest-select-wrapper">
             <select id="modal-guest-count" class="guest-select">
@@ -136,7 +141,7 @@
           <a href="WIFI:S:店名;T:WPA;P:パスワード;;" class="wifi-btn">店舗Wi-Fiに接続</a>
         </div>
 
-        <div id="section-qr-display" class="qr-container-box" style="display:none;">
+        <div id="section-qr-display" class="qr-container-box">
           <p class="qr-title">📱 ご自身のスマホからも注文できます</p>
           <div class="qr-image-wrapper">
             <img id="dynamic-qr-img" src="" alt="注文用QRコード">
@@ -144,7 +149,7 @@
           <p class="qr-desc">カメラで読み取るだけで、お席を移動せずにお手元のスマートフォンからお品書きの閲覧・追加注文が可能です。</p>
         </div>
 
-        <button onclick="submitModalQty()" style="width:80%;padding:12px;font-size:15px;font-weight:bold;background:#d32f2f;color:white;border:none;border-radius:4px;cursor:pointer;margin-top:10px;">お品書きを見る</button>
+        <button onclick="submitModalQty()" style="width:85%;padding:12px;font-size:15px;font-weight:bold;background:#d32f2f;color:white;border:none;border-radius:4px;cursor:pointer;margin-top:10px;">お品書きを見る</button>
       </div>
     </div>
   </div>
@@ -215,20 +220,25 @@
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('display-table-id').innerText = tableId;
       
+      const elModal = document.getElementById('customer-modal');
+      const elWifi = document.getElementById('section-wifi-connect');
+      const elQr = document.getElementById('section-qr-display');
+      const elGuest = document.getElementById('section-guest-select');
+
+      elModal.style.display = 'flex';
+      
       if (isViewer) {
-        document.getElementById('customer-modal').style.display = 'flex';
-        document.getElementById('section-wifi-connect').style.display = 'block';
-        document.getElementById('section-qr-display').style.display = 'block'; // QRコード枠を表示
-        document.getElementById('section-guest-select').style.display = 'none';
+        elWifi.style.display = 'block';
+        elQr.style.display = 'block'; // スタイル書き換えを強制
+        elGuest.style.display = 'none';
         
-        // 個人端末（viewパラメータなし）用のURLを動的にQR生成APIへ渡す
+        // 個人端末（viewパラメータなし）用のURLを組み立ててQRコード生成
         const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}`;
-        document.getElementById('dynamic-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(targetUrl)}`;
+        document.getElementById('dynamic-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(targetUrl)}`;
       } else {
-        document.getElementById('customer-modal').style.display = 'flex';
-        document.getElementById('section-wifi-connect').style.display = 'none';
-        document.getElementById('section-qr-display').style.display = 'none';
-        document.getElementById('section-guest-select').style.display = 'block';
+        elWifi.style.display = 'none';
+        elQr.style.display = 'none';
+        elGuest.style.display = 'block';
       }
       
       updateHeaderStatusBadges();
@@ -466,7 +476,7 @@
     }
 
     async function requestCheckout() {
-      if (!confirm("お会計（伝票の締め処理）を要請しますか？\n※確定するとスマホの注文履歴がリセットされます。")) return;
+      if (!confirm("お会計（伝票の締め処理）を要現しますか？\n※確定するとスマホの注文履歴がリセットされます。")) return;
       
       const btn = document.getElementById('checkout-action-btn');
       btn.disabled = true;
