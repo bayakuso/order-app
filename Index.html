@@ -7,21 +7,20 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
     body { background-color: #f5f5f5; color: #333; padding-bottom: 80px; overflow-x: hidden; min-height: 100vh; }
-    header { background-color: #333; color: #fff; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; }
+    
+    header { background-color: #333; color: #fff; padding: 15px; text-align: center; position: fixed; top: 0; left: 0; right: 0; height: 75px; z-index: 110; }
     .header-title { font-size: 1.2rem; font-weight: bold; }
     .table-badge { display: inline-block; background: #e0e0e0; color: #333; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-top: 5px; }
-    .category-nav { display: flex; overflow-x: auto; background: #fff; border-bottom: 1px solid #ccc; position: sticky; top: 55px; z-index: 99; }
+    
+    .category-nav { display: flex; overflow-x: auto; background: #fff; border-bottom: 1px solid #ccc; position: fixed; top: 75px; left: 0; right: 0; height: 48px; z-index: 100; }
     .category-nav::-webkit-scrollbar { display: none; }
-    .category-tab { flex: 0 0 auto; padding: 12px 20px; color: #666; font-weight: bold; border-bottom: 3px solid transparent; cursor: pointer; }
+    .category-tab { flex: 0 0 auto; padding: 14px 20px; color: #666; font-weight: bold; border-bottom: 3px solid transparent; cursor: pointer; font-size: 0.95rem; line-height: 1; }
     .category-tab.active { color: #d32f2f; border-bottom-color: #d32f2f; }
-    .menu-container { padding: 10px; max-width: 1000px; margin: 0 auto; min-height: calc(100vh - 120px); transition: transform 0.2s ease-out, opacity 0.2s ease-out; display: grid; grid-template-columns: 1fr; gap: 10px; align-content: start; }
     
-    /* メニューカード全体の高さを画像（4:3）に合わせて自動調整 */
+    .menu-container { padding: 10px; max-width: 1000px; margin: 133px auto 0 auto; min-height: calc(100vh - 213px); transition: transform 0.2s ease-out, opacity 0.2s ease-out; display: grid; grid-template-columns: 1fr; gap: 10px; align-content: start; }
+    
     .menu-card { background: #fff; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; display: flex; height: 100px; }
-    
-    /* 【修正】画像表示を確実に「4:3」に固定し、切り抜き（cover）表示にする */
     .menu-img { width: auto; height: 100%; aspect-ratio: 4 / 3; object-fit: cover; background-color: #eee; flex-shrink: 0; }
-    
     .menu-details { padding: 10px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; min-width: 0; }
     .menu-name { font-size: 0.95rem; font-weight: bold; color: #000; }
     .menu-meta { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; }
@@ -35,14 +34,15 @@
     .add-cart-btn { background-color: #d32f2f; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; cursor: pointer; height: 30px; }
     .add-cart-btn.has-option { background-color: #666; }
     @media screen and (orientation: landscape) and (min-width: 560px), screen and (min-width: 768px) { .menu-container { grid-template-columns: 1fr 1fr; } }
-    .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #333; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 90; }
+    
+    .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #333; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 110; }
     .cart-bar-left { color: #ccc; font-size: 0.9rem; font-weight: bold; letter-spacing: 1px; }
     .cart-actions { display: flex; gap: 15px; }
     .btn-wrapper { position: relative; }
     .bar-btn { padding: 10px 16px; border-radius: 4px; font-weight: bold; font-size: 0.9rem; border: none; cursor: pointer; height: 40px; }
     .history-btn { background: #555; color: #fff; }
     .view-cart-btn { background: #d32f2f; color: #fff; }
-    .notification-badge { position: absolute; top: -6px; right: -6px; background-color: #d32f2f; color: white; font-size: 0.75rem; font-weight: bold; min-width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center; justify-content: center; padding: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 95; }
+    .notification-badge { position: absolute; top: -6px; right: -6px; background-color: #d32f2f; color: white; font-size: 0.75rem; font-weight: bold; min-width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center; justify-content: center; padding: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 115; }
     .hotaru-glow { animation: hotaruAnimation 2.5s infinite ease-in-out; }
     @keyframes hotaruAnimation { 0% { opacity: 0.4; box-shadow: 0 0 2px rgba(211, 47, 47, 0.4); } 50% { opacity: 1; box-shadow: 0 0 10px rgba(211, 47, 47, 0.8), 0 0 15px rgba(211, 47, 47, 0.4); } 100% { opacity: 0.4; box-shadow: 0 0 2px rgba(211, 47, 47, 0.4); } }
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; justify-content: center; align-items: center; padding: 10px; }
@@ -184,7 +184,6 @@
     let state = { allMenus: [], categories: [], currentCategory: '', cart: [] };
     let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0, currentModalQty = 1;
 
-    // 【新設】画像がない・またはエラーの際に読み込む4:3のブランク用インラインSVGデータ
     const NO_IMAGE_SVG = "data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22 viewBox=%220 0 400 300%22><rect width=%22400%22 height=%22300%22 fill=%22%23e0e0e0%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23888888%22 font-family=%22sans-serif%22 font-size=%2224%22 font-weight=%22bold%22>No Image</text></svg>";
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -258,10 +257,16 @@
       scrollToActiveTab();
     }
 
+    /* 【修正】タブ切り替え時にスクロール位置を最上部にリセットする処理を追加 */
     function switchCategory(cat) {
       state.currentCategory = cat;
       document.querySelectorAll('.category-tab').forEach(t => { if(t.innerText === cat) t.classList.add('active'); else t.classList.remove('active'); });
-      scrollToActiveTab(); renderMenuList();
+      scrollToActiveTab(); 
+      
+      // 切り替えと同時に最上部までスムーズにスクロールバック
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      renderMenuList();
     }
 
     function scrollToActiveTab() { const activeTab = document.querySelector('.category-tab.active'); if (activeTab) activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
@@ -275,7 +280,6 @@
       filtered.forEach(item => {
         const card = document.createElement('div'); card.className = 'menu-card';
         
-        // 【修正】画像未設定（空欄や "undefined"）を判定し、ブランク用SVG（NO_IMAGE_SVG）を代入
         let imgSrc = (item.image_base64 && item.image_base64.trim() !== "" && item.image_base64 !== "undefined") ? item.image_base64 : 
                      (item.image && item.image.trim() !== "" && item.image !== "undefined") ? item.image : "";
         
@@ -294,7 +298,6 @@
           actionHtml = `<button class="qty-btn" onclick="inlineChangeQty('${qtyId}', -1)">−</button><span class="qty-display" id="${qtyId}">1</span><button class="qty-btn" onclick="inlineChangeQty('${qtyId}', 1)">+</button><button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${qtyId}')" style="margin-left:5px;">追加</button>`;
         }
 
-        // 【修正】onerror属性で画像読み込みエラーが起きた際もNO_IMAGE_SVGを出すようにフォールバック
         card.innerHTML = `
           <img src="${imgSrc}" class="menu-img" alt="${item.name}" onerror="this.onerror=null; this.src='${NO_IMAGE_SVG}';">
           <div class="menu-details">
