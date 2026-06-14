@@ -8,21 +8,17 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
     body { background-color: #f5f5f5; color: #333; padding-bottom: 80px; overflow-x: hidden; min-height: 100vh; }
     
-    /* 【修正】情報追加に伴い、ヘッダーの高さを 75px から 85px に拡張 */
     header { background-color: #333; color: #fff; padding: 10px 15px; text-align: center; position: fixed; top: 0; left: 0; right: 0; height: 85px; z-index: 110; }
     .header-title { font-size: 1.1rem; font-weight: bold; }
-    .header-status-bar { display: flex; justify-content: center; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
-    .table-badge { display: inline-block; background: #e0e0e0; color: #333; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-    /* 【復活】人数・開始時間バッジのスタイル */
-    .status-badge { display: inline-block; background: #555; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+    .header-status-bar { display: flex; justify-content: center; gap: 6px; margin-top: 5px; flex-wrap: nowrap; }
+    .table-badge { display: inline-block; background: #e0e0e0; color: #333; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; white-space: nowrap; }
+    .status-badge { display: inline-block; background: #555; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; white-space: nowrap; }
     
-    /* 【修正】ヘッダー拡張(85px) ＋ カテゴリーナビ(48px) ＝ 計133px 分の位置にナビを配置 */
     .category-nav { display: flex; overflow-x: auto; background: #fff; border-bottom: 1px solid #ccc; position: fixed; top: 85px; left: 0; right: 0; height: 48px; z-index: 100; }
     .category-nav::-webkit-scrollbar { display: none; }
-    .category-tab { flex: 0 0 auto; padding: 14px 20px; color: #666; font-weight: bold; border-bottom: 3px solid transparent; cursor: pointer; font-size: 0.95rem; line-height: 1; }
+    .category-tab { flex: 0 0 auto; padding: 14px 16px; color: #666; font-weight: bold; border-bottom: 3px solid transparent; cursor: pointer; font-size: 0.95rem; line-height: 1; }
     .category-tab.active { color: #d32f2f; border-bottom-color: #d32f2f; }
     
-    /* 【修正】コンテンツ開始位置（マージン）を 133px ＋ 余白10px ＝ 143px に調整 */
     .menu-container { padding: 10px; max-width: 1000px; margin: 143px auto 0 auto; min-height: calc(100vh - 233px); transition: transform 0.2s ease-out, opacity 0.2s ease-out; display: grid; grid-template-columns: 1fr; gap: 10px; align-content: start; }
     
     .menu-card { background: #fff; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; display: flex; height: 100px; }
@@ -41,16 +37,18 @@
     .add-cart-btn.has-option { background-color: #666; }
     @media screen and (orientation: landscape) and (min-width: 560px), screen and (min-width: 768px) { .menu-container { grid-template-columns: 1fr 1fr; } }
     
-    .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #333; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 110; }
-    .cart-bar-left { color: #ccc; font-size: 0.9rem; font-weight: bold; letter-spacing: 1px; }
-    .cart-actions { display: flex; gap: 15px; }
+    /* 【修正】解像度に合わせて伸縮するフッターレイアウト */
+    .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #333; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; z-index: 110; gap: 8px; }
+    .cart-bar-left { color: #ccc; font-size: 0.8rem; font-weight: bold; letter-spacing: 0px; white-space: nowrap; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; }
+    .cart-actions { display: flex; gap: 8px; flex-shrink: 0; }
     .btn-wrapper { position: relative; }
-    .bar-btn { padding: 10px 16px; border-radius: 4px; font-weight: bold; font-size: 0.9rem; border: none; cursor: pointer; height: 40px; }
+    .bar-btn { padding: 10px 12px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; border: none; cursor: pointer; height: 40px; white-space: nowrap; }
     .history-btn { background: #555; color: #fff; }
     .view-cart-btn { background: #d32f2f; color: #fff; }
     .notification-badge { position: absolute; top: -6px; right: -6px; background-color: #d32f2f; color: white; font-size: 0.75rem; font-weight: bold; min-width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center; justify-content: center; padding: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 115; }
     .hotaru-glow { animation: hotaruAnimation 2.5s infinite ease-in-out; }
     @keyframes hotaruAnimation { 0% { opacity: 0.4; box-shadow: 0 0 2px rgba(211, 47, 47, 0.4); } 50% { opacity: 1; box-shadow: 0 0 10px rgba(211, 47, 47, 0.8), 0 0 15px rgba(211, 47, 47, 0.4); } 100% { opacity: 0.4; box-shadow: 0 0 2px rgba(211, 47, 47, 0.4); } }
+    
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; justify-content: center; align-items: center; padding: 10px; }
     .modal-sheet { background: #fff; width: 100%; max-width: 400px; border-radius: 5px; overflow: hidden; display: flex; flex-direction: column; max-height: 80vh; }
     .modal-header { background: #333; color: #fff; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
@@ -207,14 +205,12 @@
         document.getElementById('customer-modal').style.display = 'flex';
         document.getElementById('section-wifi-connect').style.display = 'none';
         document.getElementById('section-guest-select').style.display = 'block';
-        // すでにURLにパラメータが入っている場合の再レンダリング処理
         updateHeaderStatusBadges();
       }
       updateCartBadge();
       setupSwipeEvents();
     });
 
-    /* 【復活】URLパラメータを読み込んでヘッダーのバッジ表示を更新する関数 */
     function updateHeaderStatusBadges() {
       const num = urlParams.get('num');
       const time = urlParams.get('time');
@@ -262,8 +258,6 @@
         const now = new Date(); const timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
         urlParams.set('num', guestCount); urlParams.set('time', encodeURIComponent(timeStr));
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
-        
-        // 【復活】確定した情報をヘッダーバッジに同期反映
         updateHeaderStatusBadges();
         fetchMenus();
       }
@@ -302,6 +296,7 @@
 
     function scrollToActiveTab() { const activeTab = document.querySelector('.category-tab.active'); if (activeTab) activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
 
+    UX_IMAGE_FALLBACK = NO_IMAGE_SVG;
     function renderMenuList() {
       const listContainer = document.getElementById('menu-list'); listContainer.innerHTML = '';
       const filtered = state.allMenus.filter(m => m.category === state.currentCategory);
@@ -315,7 +310,7 @@
                      (item.image && item.image.trim() !== "" && item.image !== "undefined") ? item.image : "";
         
         if (!imgSrc) {
-          imgSrc = NO_IMAGE_SVG;
+          imgSrc = UX_IMAGE_FALLBACK;
         }
 
         const qtyId = `qty-${item.menu_id}`;
@@ -330,7 +325,7 @@
         }
 
         card.innerHTML = `
-          <img src="${imgSrc}" class="menu-img" alt="${item.name}" onerror="this.onerror=null; this.src='${NO_IMAGE_SVG}';">
+          <img src="${imgSrc}" class="menu-img" alt="${item.name}" onerror="this.onerror=null; this.src=UX_IMAGE_FALLBACK;">
           <div class="menu-details">
             <div class="menu-name">${item.name}</div>
             <div class="menu-meta">
@@ -490,7 +485,7 @@
         const result = await response.json();
         if (result.status === 'success') { showCustomToast(true, 'ご注文を承りました', '厨房へ伝票を送信しました。'); state.cart = []; updateCartBadge(); closeModal('cart-modal'); }
         else { showCustomToast(false, '注文エラー', result.message); btn.disabled = false; btn.innerText = "注文を確定する"; }
-      } catch (err) { showCustomToast(false, '通信失敗', 'ネットワーク環境をご確認ください。'); btn.disabled = false; btn.innerText = "注文を確定する"; }
+      } catch (err) fn { showCustomToast(false, '通信失敗', 'ネットワーク環境をご確認ください。'); btn.disabled = false; btn.innerText = "注文を確定する"; }
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
