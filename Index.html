@@ -372,6 +372,47 @@
       text-decoration: none;
       text-align: center;
     }
+
+    /* カスタム通知トーストのスタイル */
+    .toast-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 300;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .toast-card {
+      background: #fff;
+      border-top: 4px solid #d32f2f;
+      border-radius: 5px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      padding: 25px 20px;
+      text-align: center;
+      width: 100%;
+      max-width: 320px;
+      animation: toastPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes toastPop {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .toast-icon {
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+    }
+    .toast-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 6px;
+    }
+    .toast-msg {
+      font-size: 0.9rem;
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -487,6 +528,14 @@
     </div>
   </div>
 
+  <div id="toast-popup" class="toast-overlay">
+    <div class="toast-card">
+      <div class="toast-icon" id="toast-icon-area"></div>
+      <div class="toast-title" id="toast-title-area"></div>
+      <div class="toast-msg" id="toast-msg-area"></div>
+    </div>
+  </div>
+
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzvd7how1B-d5vKnCtPKSxqSpwyx-pZsHwOv6tm1YFHOt-HTuhXnaMrnoTJ6Wrx75nv9w/exec";
 
@@ -506,7 +555,6 @@
     let touchEndX = 0;
     let touchEndY = 0;
     
-    // オプションモーダル内で管理する一時的な数量
     let currentModalQty = 1;
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -562,7 +610,7 @@
     }
 
     function isModalActive() {
-      const modalIds = ['customer-modal', 'cart-modal', 'history-modal', 'option-modal'];
+      const modalIds = ['customer-modal', 'cart-modal', 'history-modal', 'option-modal', 'toast-popup'];
       return modalIds.some(id => {
         const el = document.getElementById(id);
         return el && el.style.display === 'flex';
@@ -685,7 +733,6 @@
           item.options = String(rawOptionValue).trim();
           actionHtml = `<button class="add-cart-btn has-option" onclick="openOptionModal('${item.menu_id}')">選択</button>`;
         } else {
-          // 増減ボタン方式のUI構造
           actionHtml = `
             <button class="qty-btn" onclick="inlineChangeQty('${qtyId}', -1)">−</button>
             <span class="qty-display" id="${qtyId}">1</span>
@@ -712,18 +759,16 @@
       setTimeout(() => { listContainer.style.opacity = 1; }, 50);
     }
 
-    // 通常メニュー用：インライン配置された増減ボタンの処理
     function inlineChangeQty(qtyId, amount) {
       const el = document.getElementById(qtyId);
       if (!el) return;
       let current = parseInt(el.innerText, 10) || 1;
       current += amount;
       if (current < 1) current = 1;
-      if (current > 10) current = 10; // 上限10点
+      if (current > 10) current = 10;
       el.innerText = current;
     }
 
-    // オプションモーダル用：増減ボタンの処理
     function changeModalQty(amount) {
       currentModalQty += amount;
       if (currentModalQty < 1) currentModalQty = 1;
@@ -733,7 +778,7 @@
 
     function openOptionModal(menuId) {
       const item = state.allMenus.find(m => m.menu_id == menuId);
-      currentModalQty = 1; // 初期値リセット
+      currentModalQty = 1;
       
       const modal = document.getElementById('option-modal');
       modal.querySelector('.option-title').innerText = `${item.name} の項目を選択してください`;
@@ -766,8 +811,6 @@
       const item = state.allMenus.find(m => m.menu_id == menuId);
       const qty = parseInt(document.getElementById(qtyId).innerText, 10) || 1;
       executeAddToCart(item, qty, null);
-      
-      // カートへ追加した後は、画面上のカウント表示を1に戻す
       document.getElementById(qtyId).innerText = 1;
     }
 
@@ -874,6 +917,31 @@
       }
     }
 
+    /* 雰囲気に合わせたカスタムポップアップ通知の表示関数 */
+    function showCustomToast(isSuccess, title, message) {
+      const overlay = document.getElementById('toast-popup');
+      const iconArea = document.getElementById('toast-icon-area');
+      const titleArea = document.getElementById('toast-title-area');
+      const msgArea = document.getElementById('toast-msg-area');
+
+      if (isSuccess) {
+        iconArea.innerHTML = "🍵"; // 成功の和風和みアイコン
+        iconArea.style.color = "#4caf50";
+      } else {
+        iconArea.innerHTML = "⚠️"; // エラーアイコン
+        iconArea.style.color = "#d32f2f";
+      }
+
+      titleArea.innerText = title;
+      msgArea.innerText = message;
+      overlay.style.display = 'flex';
+
+      // 2.5秒後に自動で閉じる
+      setTimeout(() => {
+        overlay.style.display = 'none';
+      }, 2500);
+    }
+
     async function sendBulkOrder() {
       const btn = document.getElementById('send-order-btn');
       btn.disabled = true;
@@ -891,17 +959,18 @@
         const result = await response.json();
 
         if (result.status === 'success') {
-          alert('注文を送信しました。');
+          // ブラウザ標準のalertを廃止し、和モダン調のトーストに変更
+          showCustomToast(true, 'ご注文を承りました', '厨房へ伝票を送信しました。お料理の到着までしばらくお待ちください。');
           state.cart = [];
           updateCartTotalCount();
           closeModal('cart-modal');
         } else {
-          alert(`エラー: ${result.message}`);
+          showCustomToast(false, '注文送信エラー', result.message);
           btn.disabled = false;
           btn.innerText = "注文を確定する";
         }
       } catch (err) {
-        alert(`通信失敗: ${err.toString()}`);
+        showCustomToast(false, '通信失敗', 'ネットワーク環境をご確認の上、もう一度送信をお試しください。');
         btn.disabled = false;
         btn.innerText = "注文を確定する";
       }
