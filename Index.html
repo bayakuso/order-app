@@ -76,7 +76,7 @@
       border-bottom-color: #d32f2f;
     }
 
-    /* メニューリスト（基本は縦1列、横画面で2列に切り替えるためGridを採用） */
+    /* メニューリスト */
     .menu-container {
       padding: 10px;
       max-width: 1000px; /* 横2列時の幅に合わせて上限を拡張 */
@@ -138,26 +138,50 @@
       color: #666;
     }
 
+    /* 数量増減UIの配置エリア */
     .action-area {
       display: flex;
       align-items: center;
       gap: 5px;
     }
 
-    .qty-select {
-      padding: 3px;
-      font-size: 0.9rem;
+    /* 数量変更ボタンのスタイル */
+    .qty-btn {
+      width: 30px;
+      height: 30px;
+      background-color: #f0f0f0;
+      color: #333;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .qty-btn:active {
+      background-color: #ddd;
+    }
+
+    .qty-display {
+      min-width: 24px;
+      text-align: center;
+      font-size: 1rem;
+      font-weight: bold;
     }
 
     .add-cart-btn {
       background-color: #d32f2f;
       color: white;
       border: none;
-      padding: 5px 10px;
-      border-radius: 3px;
+      padding: 6px 12px;
+      border-radius: 4px;
       font-size: 0.85rem;
       font-weight: bold;
       cursor: pointer;
+      height: 30px;
     }
     
     .add-cart-btn.has-option {
@@ -381,7 +405,10 @@
         <div style="width:100%; text-align:center;">ご案内</div>
       </div>
       <div class="modal-body">
-        <p style="font-size:14px; font-weight:bold; color:#d32f2f; margin-bottom:15px;">本日のお通し：特製おつまみ三品盛り</p>
+        <div style="background-color: #fff8f8; border: 1px solid #ffcccc; border-radius: 4px; padding: 12px; margin-bottom: 15px;">
+          <p style="font-size:14px; font-weight:bold; color:#d32f2f; margin-bottom:4px;">本日のお通し：特製おつまみ三品盛り</p>
+          <p style="font-size:12px; color:#666; line-height:1.4;">※席料、お通しとしてお一人様**1,000円（税込）**を頂戴いたします。</p>
+        </div>
         
         <div id="section-guest-select" style="margin-bottom:20px; display:none;">
           <label style="display:block;font-size:14px;margin-bottom:8px;font-weight:bold;">人数を選択してください</label>
@@ -444,6 +471,14 @@
           <div class="option-title">項目を選択してください</div>
           <div id="option-container-list"></div>
         </div>
+        <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
+          <span style="font-weight:bold; font-size:14px;">数量：</span>
+          <div class="action-area">
+            <button class="qty-btn" onclick="changeModalQty(-1)">−</button>
+            <span class="qty-display" id="modal-qty-val">1</span>
+            <button class="qty-btn" onclick="changeModalQty(1)">+</button>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="bar-btn history-btn" onclick="closeModal('option-modal')">キャンセル</button>
@@ -470,6 +505,9 @@
     let touchStartY = 0;
     let touchEndX = 0;
     let touchEndY = 0;
+    
+    // オプションモーダル内で管理する一時的な数量
+    let currentModalQty = 1;
 
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('display-table-id').innerText = tableId;
@@ -640,19 +678,20 @@
         const imgSrc = item.image_base64 || item.image || '';
         const qtyId = `qty-${item.menu_id}`;
 
-        let qtyOptions = '';
-        for(let idx = 1; idx <= 10; idx++) {
-          qtyOptions += `<option value="${idx}">${idx}</option>`;
-        }
-
         const rawOptionValue = item.options || item.option || item.Options || item.Option || item.オプション || '';
 
-        let buttonHtml = '';
+        let actionHtml = '';
         if (rawOptionValue && String(rawOptionValue).trim() !== '') {
           item.options = String(rawOptionValue).trim();
-          buttonHtml = `<button class="add-cart-btn has-option" onclick="openOptionModal('${item.menu_id}', '${qtyId}')">選択</button>`;
+          actionHtml = `<button class="add-cart-btn has-option" onclick="openOptionModal('${item.menu_id}')">選択</button>`;
         } else {
-          buttonHtml = `<button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${qtyId}')">追加</button>`;
+          // 増減ボタン方式のUI構造
+          actionHtml = `
+            <button class="qty-btn" onclick="inlineChangeQty('${qtyId}', -1)">−</button>
+            <span class="qty-display" id="${qtyId}">1</span>
+            <button class="qty-btn" onclick="inlineChangeQty('${qtyId}', 1)">+</button>
+            <button class="add-cart-btn" onclick="addToCart('${item.menu_id}', '${qtyId}')" style="margin-left:5px;">追加</button>
+          `;
         }
 
         card.innerHTML = `
@@ -662,8 +701,7 @@
             <div class="menu-meta">
               <div class="menu-price">${Number(item.price).toLocaleString()}</div>
               <div class="action-area">
-                <select id="${qtyId}" class="qty-select">${qtyOptions}</select>
-                ${buttonHtml}
+                ${actionHtml}
               </div>
             </div>
           </div>
@@ -674,12 +712,33 @@
       setTimeout(() => { listContainer.style.opacity = 1; }, 50);
     }
 
-    function openOptionModal(menuId, qtyId) {
+    // 通常メニュー用：インライン配置された増減ボタンの処理
+    function inlineChangeQty(qtyId, amount) {
+      const el = document.getElementById(qtyId);
+      if (!el) return;
+      let current = parseInt(el.innerText, 10) || 1;
+      current += amount;
+      if (current < 1) current = 1;
+      if (current > 10) current = 10; // 上限10点
+      el.innerText = current;
+    }
+
+    // オプションモーダル用：増減ボタンの処理
+    function changeModalQty(amount) {
+      currentModalQty += amount;
+      if (currentModalQty < 1) currentModalQty = 1;
+      if (currentModalQty > 10) currentModalQty = 10;
+      document.getElementById('modal-qty-val').innerText = currentModalQty;
+    }
+
+    function openOptionModal(menuId) {
       const item = state.allMenus.find(m => m.menu_id == menuId);
-      const qty = document.getElementById(qtyId).value;
+      currentModalQty = 1; // 初期値リセット
       
       const modal = document.getElementById('option-modal');
-      modal.querySelector('.option-title').innerText = `${item.name} (${qty}点)の項目を選択してください`;
+      modal.querySelector('.option-title').innerText = `${item.name} の項目を選択してください`;
+      document.getElementById('modal-qty-val').innerText = currentModalQty;
+      
       const container = document.getElementById('option-container-list');
       container.innerHTML = '';
 
@@ -696,7 +755,7 @@
 
       document.getElementById('option-confirm-submit-btn').onclick = () => {
         const selectedOpt = document.querySelector('input[name="menu-option-radio"]:checked').value;
-        executeAddToCart(item, qty, selectedOpt);
+        executeAddToCart(item, currentModalQty, selectedOpt);
         closeModal('option-modal');
       };
 
@@ -705,8 +764,11 @@
 
     function addToCart(menuId, qtyId) {
       const item = state.allMenus.find(m => m.menu_id == menuId);
-      const qty = document.getElementById(qtyId).value;
+      const qty = parseInt(document.getElementById(qtyId).innerText, 10) || 1;
       executeAddToCart(item, qty, null);
+      
+      // カートへ追加した後は、画面上のカウント表示を1に戻す
+      document.getElementById(qtyId).innerText = 1;
     }
 
     function executeAddToCart(item, qty, optionText) {
