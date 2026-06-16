@@ -8,12 +8,18 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
     body { background-color: #f5f5f5; color: #333; padding-bottom: 80px; overflow-x: hidden; min-height: 100vh; }
     
-    header { background-color: #333; color: #fff; padding: 10px 15px; text-align: center; position: fixed; top: 0; left: 0; right: 0; height: 85px; z-index: 110; }
+    header { background-color: #333; color: #fff; padding: 10px 15px; position: fixed; top: 0; left: 0; right: 0; height: 85px; z-index: 110; display: flex; justify-content: space-between; align-items: center; }
+    .header-left { display: flex; flex-direction: column; justify-content: center; }
     .header-title { font-size: 1.1rem; font-weight: bold; }
-    .header-status-bar { display: flex; justify-content: center; gap: 6px; margin-top: 5px; flex-wrap: nowrap; }
+    .header-status-bar { display: flex; gap: 6px; margin-top: 5px; flex-wrap: nowrap; }
     .table-badge { display: inline-block; background: #e0e0e0; color: #333; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; white-space: nowrap; }
     .status-badge { display: inline-block; background: #555; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; white-space: nowrap; }
     
+    /* 右上固定のスマホ連携ボタン */
+    .header-right { flex-shrink: 0; }
+    .header-link-btn { background-color: #007aff; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .header-link-btn:active { background-color: #0056b3; }
+
     .category-nav { display: flex; overflow-x: auto; background: #fff; border-bottom: 1px solid #ccc; position: fixed; top: 85px; left: 0; right: 0; height: 48px; z-index: 100; }
     .category-nav::-webkit-scrollbar { display: none; }
     .category-tab { flex: 0 0 auto; padding: 14px 16px; color: #666; font-weight: bold; border-bottom: 3px solid transparent; cursor: pointer; font-size: 0.95rem; line-height: 1; }
@@ -21,16 +27,8 @@
     
     .app-main-layout { max-width: 1000px; margin: 143px auto 0 auto; padding: 10px; }
     
-    /* 埋め込みインフォボード */
-    .embedded-info-board { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-    .info-welcome-box { background-color: #fff8f8; border: 1px solid #ffcccc; border-radius: 4px; padding: 12px; margin-bottom: 12px; text-align: center; }
-    .info-split-row { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
-    .info-split-col { flex: 1; min-width: 240px; }
-
     .menu-container { transition: transform 0.2s ease-out, opacity 0.2s ease-out; display: grid; grid-template-columns: 1fr; gap: 10px; align-content: start; }
-    
-    /* メニューカードの高さを連携ボタン格納のため115pxに最適化 */
-    .menu-card { background: #fff; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; display: flex; height: 115px; }
+    .menu-card { background: #fff; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; display: flex; height: 110px; }
     .menu-img { width: auto; height: 100%; aspect-ratio: 4 / 3; object-fit: cover; background-color: #eee; flex-shrink: 0; }
     .menu-details { padding: 8px 10px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; min-width: 0; }
     .menu-name { font-size: 0.95rem; font-weight: bold; color: #000; line-height: 1.3; }
@@ -38,7 +36,6 @@
     .menu-price { font-size: 1.1rem; font-weight: bold; color: #d32f2f; white-space: nowrap; }
     .menu-price::after { content: " 円"; font-size: 0.8rem; color: #666; }
     
-    /* アクションエリア全体のレイアウト調整 */
     .action-area { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
     .controls-row { display: flex; align-items: center; gap: 4px; }
     
@@ -49,10 +46,6 @@
     .add-cart-btn { background-color: #d32f2f; color: white; border: none; padding: 0 10px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; cursor: pointer; height: 28px; }
     .add-cart-btn.has-option { background-color: #666; }
     
-    /* 新設：スマホ連携（同期）ボタンのスタイル */
-    .link-phone-btn { background-color: #007aff; color: white; border: none; padding: 0 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; cursor: pointer; height: 22px; display: inline-flex; align-items: center; gap: 3px; }
-    .link-phone-btn:active { background-color: #0056b3; }
-
     .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #333; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; z-index: 110; gap: 8px; }
     .cart-bar-left { color: #ccc; font-size: 0.8rem; font-weight: bold; letter-spacing: 0px; white-space: nowrap; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; }
     .cart-actions { display: flex; gap: 8px; flex-shrink: 0; }
@@ -86,17 +79,13 @@
     .guest-select-wrapper { position: relative; width: 100%; max-width: 200px; margin: 0 auto; }
     .guest-select { width: 100%; padding: 10px; font-size: 16px; font-weight: bold; border: 1px solid #333; border-radius: 4px; background: #fff; text-align: center; }
     
-    .wifi-connect-box { padding: 12px; background-color: #fff; border: 1px dashed #333; border-radius: 4px; margin-bottom: 10px; text-align: center; }
-    .wifi-btn { display: block; width: 100%; box-sizing: border-box; padding: 10px; background-color: #333; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; text-decoration: none; text-align: center; }
+    .wifi-connect-box { text-align: center; padding: 10px 0; }
+    .wifi-btn { display: block; width: 100%; box-sizing: border-box; padding: 12px; background-color: #333; color: white; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; text-decoration: none; text-align: center; margin-top: 15px; }
     
-    .qr-container-box { padding: 12px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; text-align: center; }
-    .qr-title { font-size: 13px; font-weight: bold; color: #333; margin-bottom: 6px; }
-    .qr-image-wrapper { display: flex; justify-content: center; margin: 8px 0; }
-    
-    /* インラインSVG描画用コンテナ */
-    .qr-canvas-target { width: 130px; height: 130px; border: 1px solid #ccc; background: #fff; padding: 4px; display: inline-block; }
+    .qr-container-box { text-align: center; }
+    .qr-image-wrapper { display: flex; justify-content: center; margin: 15px 0; }
+    .qr-canvas-target { width: 140px; height: 140px; border: 1px solid #ccc; background: #fff; padding: 4px; display: inline-block; }
     .qr-canvas-target svg { width: 100% !important; height: 100% !important; display: block; }
-    .qr-desc { font-size: 11px; color: #666; line-height: 1.4; text-align: left; }
 
     .toast-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 300; display: none; justify-content: center; align-items: center; padding: 20px; }
     .toast-card { background: #fff; border-top: 4px solid #d32f2f; border-radius: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 25px 20px; text-align: center; width: 100%; max-width: 320px; animation: toastPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -110,42 +99,23 @@
 <body>
 
   <header>
-    <div class="header-title">注文アプリ</div>
-    <div class="header-status-bar">
-      <div class="table-badge"><span id="display-table-id">--</span> 番卓</div>
-      <div class="status-badge" id="display-guest-badge" style="display:none;"><span id="display-guest-count">--</span> 名様</div>
-      <div class="status-badge" id="display-time-badge" style="display:none;">開始 <span id="display-start-time">--:--</span></div>
+    <div class="header-left">
+      <div class="header-title">注文アプリ</div>
+      <div class="header-status-bar">
+        <div class="table-badge"><span id="display-table-id">--</span> 番卓</div>
+        <div class="status-badge" id="display-guest-badge" style="display:none;"><span id="display-guest-count">--</span> 名様</div>
+        <div class="status-badge" id="display-time-badge" style="display:none;">開始 <span id="display-start-time">--:--</span></div>
+      </div>
+    </div>
+    <!-- 常設端末判定（view=true）のときだけ表示する右上連携ボタン -->
+    <div class="header-right" id="header-link-area" style="display:none;">
+      <button class="header-link-btn" onclick="openGlobalPhoneLinkModal()">📱 スマホ連携</button>
     </div>
   </header>
 
   <nav class="category-nav" id="category-bar"></nav>
 
   <div class="app-main-layout">
-    <!-- 常設端末(view=true)用埋め込み固定インフォボード -->
-    <div id="embedded-viewer-info" class="embedded-info-board" style="display:none;">
-      <div class="info-welcome-box">
-        <p style="font-size:14px; font-weight:bold; color:#d32f2f; margin-bottom:4px;">本日のお通し：特製おつまみ三品盛り</p>
-        <p style="font-size:12px; color:#666;">※席料、お通しとしてお一人様**1,000円（税込）**を頂戴いたします。</p>
-      </div>
-      <div class="info-split-row">
-        <div class="info-split-col">
-          <div class="wifi-connect-box">
-            <p style="font-size:13px; margin:0 0 8px 0; font-weight:bold;">店内のWi-Fiに自動接続</p>
-            <a href="WIFI:S:店名;T:WPA;P:パスワード;;" class="wifi-btn">店舗Wi-Fiに接続</a>
-          </div>
-        </div>
-        <div class="info-split-col">
-          <div class="qr-container-box">
-            <p class="qr-title">📱 ご自身のスマホからも注文できます</p>
-            <div class="qr-image-wrapper">
-              <div id="dynamic-qr-canvas" class="qr-canvas-target"></div>
-            </div>
-            <p class="qr-desc">カメラで読み取るだけで、お手元のスマートフォンから注文が可能です。</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- メニューリスト表示エリア -->
     <main class="menu-container" id="menu-list">
       <p style="text-align:center; padding:20px; color:#666;">データを読み込み中...</p>
@@ -163,14 +133,14 @@
     </div>
   </div>
 
-  <!-- 個人端末用(view無) 人数選択ポップアップ -->
+  <!-- 人数選択ポップアップ（常設・個人スマホ一元化） -->
   <div id="customer-modal" class="modal-overlay" style="display:none;">
     <div class="modal-sheet" style="text-align:center;">
       <div class="modal-header"><div style="width:100%; text-align:center;">ご案内</div></div>
       <div class="modal-body">
         <div style="background-color: #fff8f8; border: 1px solid #ffcccc; border-radius: 4px; padding: 12px; margin-bottom: 12px;">
           <p style="font-size:14px; font-weight:bold; color:#d32f2f; margin-bottom:4px;">本日のお通し：特製おつまみ三品盛り</p>
-          <p style="font-size:12px; color:#666; line-height:1.4;">※席料、お通しとしてお一人様**1,000円（税込）**を頂戴いたします。</p>
+          <p style="font-size:12px; color:#666; line-height:1.4;">※席料、お通しとしてお一人様 1,000円（税込）を頂戴いたします。</p>
         </div>
         
         <div style="margin-bottom:15px;">
@@ -240,19 +210,38 @@
     </div>
   </div>
 
-  <!-- 新設：個別メニュー連携用QRコードポップアップモーダル -->
+  <!-- スマホ同期用QRコードポップアップモーダル -->
   <div id="phone-link-modal" class="modal-overlay">
     <div class="modal-sheet" style="text-align:center;">
-      <div class="modal-header"><div id="phone-link-item-title">メニューをスマホに連携</div><button class="modal-close" onclick="closeModal('phone-link-modal')">×</button></div>
+      <div class="modal-header"><div>ご自身のスマホで注文</div><button class="modal-close" onclick="closeAndPromptWifi()">×</button></div>
       <div class="modal-body">
-        <p style="font-size:13px; color:#333; margin-bottom:12px; font-weight:bold;">このメニューをお手元のスマホで開きます</p>
-        <div style="display:flex; justify-content:center; margin:15px 0;">
-          <div id="modal-qr-canvas" class="qr-canvas-target"></div>
+        <div class="qr-container-box">
+          <p style="font-size:14px; color:#333; font-weight:bold; margin-bottom:8px;">QRコードを読み取ってください</p>
+          <div class="qr-image-wrapper">
+            <div id="modal-qr-canvas" class="qr-canvas-target"></div>
+          </div>
+          <p style="font-size:12px; color:#666; line-height:1.4; padding:0 5px;">カメラでスキャンすると、この席（卓）の注文画面をお手元のスマートフォンに同期して開くことができます。</p>
         </div>
-        <p style="font-size:11px; color:#666; line-height:1.4; text-align:center; padding:0 10px;">スマートフォンのカメラで読み取ると、自動的に該当カテゴリが選択された状態で注文画面を開くことができます。</p>
       </div>
       <div class="modal-footer">
-        <button class="bar-btn view-cart-btn" onclick="closeModal('phone-link-modal')" style="background:#555;">閉じる</button>
+        <button class="bar-btn view-cart-btn" onclick="closeAndPromptWifi()" style="background:#555; width:100%;">次へ (Wi-Fi接続の案内)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 店内Wi-Fi接続誘導用モーダル -->
+  <div id="wifi-prompt-modal" class="modal-overlay">
+    <div class="modal-sheet" style="text-align:center;">
+      <div class="modal-header"><div>店内の快適Wi-Fi</div><button class="modal-close" onclick="closeModal('wifi-prompt-modal')">×</button></div>
+      <div class="modal-body">
+        <div class="wifi-connect-box">
+          <p style="font-size:15px; font-weight:bold; color:#000; margin-bottom:6px;">店内の無料Wi-Fiに接続しますか？</p>
+          <p style="font-size:12px; color:#666; line-height:1.4;">スマートフォンでスムーズに注文、通信制限を気にせずご利用いただくために、店舗専用高速Wi-Fiを解放しております。</p>
+          <a href="WIFI:S:店名;T:WPA;P:パスワード;;" class="wifi-btn" onclick="closeModal('wifi-prompt-modal')">店舗Wi-Fiに自動接続</a>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="bar-btn view-cart-btn" onclick="closeModal('wifi-prompt-modal')" style="background:#555;">閉じる</button>
       </div>
     </div>
   </div>
@@ -280,18 +269,13 @@
     window.onload = () => {
       document.getElementById('display-table-id').innerText = tableId;
       
+      // 常設端末モード(view=true)のとき、画面右上にスマホ連携ボタンエリアを顕在化
       if (isViewer) {
-        document.getElementById('embedded-viewer-info').style.display = 'block';
-        document.getElementById('customer-modal').style.display = 'none';
-        
-        // ベースの全体同期URL
-        const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}`;
-        const canvasContainer = document.getElementById('dynamic-qr-canvas');
-        if (canvasContainer) canvasContainer.innerHTML = MiniQR.generate(targetUrl);
-      } else {
-        document.getElementById('embedded-viewer-info').style.display = 'none';
-        document.getElementById('customer-modal').style.display = 'flex';
+        document.getElementById('header-link-area').style.display = 'block';
       }
+      
+      // 【仕様変更】常設・個人関係なく、起動時は必ず最初に人数選択をポップアップする
+      document.getElementById('customer-modal').style.display = 'flex';
       
       updateHeaderStatusBadges();
       fetchMenus();
@@ -299,19 +283,23 @@
       setupSwipeEvents();
     };
 
-    // メニュー固有のスマホ同期用モーダル表示
-    function openPhoneLinkModal(menuId, menuName, categoryName) {
+    // グローバル（右上ボタン）からのスマホ同期モーダル表示
+    function openGlobalPhoneLinkModal() {
       const modal = document.getElementById('phone-link-modal');
-      document.getElementById('phone-link-item-title').innerText = `${menuName}`;
-      
-      // 客がスマホでスキャンした際、そのメニューのカテゴリが直帰開くようにパラメータを生成
-      const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}&cat=${encodeURIComponent(categoryName)}`;
+      // パラメータを仕込んだベース注文URLをQRコード化
+      const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}`;
       
       const canvas = document.getElementById('modal-qr-canvas');
       if (canvas) {
         canvas.innerHTML = MiniQR.generate(targetUrl);
       }
       modal.style.display = 'flex';
+    }
+
+    // 【仕様変更】QRコードを閉じたら自動的にWi-Fi案内ポップアップへスイッチする
+    function closeAndPromptWifi() {
+      closeModal('phone-link-modal');
+      document.getElementById('wifi-prompt-modal').style.display = 'flex';
     }
 
     function updateHeaderStatusBadges() {
@@ -343,7 +331,7 @@
       document.addEventListener('touchend', (e) => { if (isModalActive()) return; touchEndX = e.changedTouches[0].screenX; touchEndY = e.changedTouches[0].screenY; menuList.style.transform = ''; menuList.style.opacity = ''; handleSwipeGesture(); }, { passive: true });
     }
 
-    function isModalActive() { return ['customer-modal', 'cart-modal', 'history-modal', 'option-modal', 'phone-link-modal', 'toast-popup'].some(id => { const el = document.getElementById(id); return el && el.style.display === 'flex'; }); }
+    function isModalActive() { return ['customer-modal', 'cart-modal', 'history-modal', 'option-modal', 'phone-link-modal', 'wifi-prompt-modal', 'toast-popup'].some(id => { const el = document.getElementById(id); return el && el.style.display === 'flex'; }); }
     
     function handleSwipeGesture() {
       const deltaX = touchEndX - touchStartX; const deltaY = touchEndY - touchStartY;
@@ -355,13 +343,11 @@
     }
 
     function submitModalQty() {
-      if (!isViewer) {
-        const guestCount = document.getElementById('modal-guest-count').value;
-        const now = new Date(); const timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
-        urlParams.set('num', guestCount); urlParams.set('time', encodeURIComponent(timeStr));
-        window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
-        updateHeaderStatusBadges();
-      }
+      const guestCount = document.getElementById('modal-guest-count').value;
+      const now = new Date(); const timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+      urlParams.set('num', guestCount); urlParams.set('time', encodeURIComponent(timeStr));
+      window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+      updateHeaderStatusBadges();
       closeModal('customer-modal');
     }
 
@@ -372,7 +358,6 @@
         state.allMenus = data;
         state.categories = [...new Set(state.allMenus.map(m => m.category).filter(Boolean))];
         
-        // 個人スマホURLスキップ遷移用パラメータ（cat）をパース
         const targetCat = urlParams.get('cat');
         if (targetCat && state.categories.includes(decodeURIComponent(targetCat))) {
           state.currentCategory = decodeURIComponent(targetCat);
@@ -420,14 +405,6 @@
         const qtyId = `qty-${item.menu_id}`;
         const rawOptionValue = item.options || item.option || '';
         
-        // 常設端末表示（view=true）の場合のみ、メニュー直下に「スマホで注文」同期ボタンを出力
-        let phoneLinkHtml = "";
-        if (isViewer) {
-          const escapedName = item.name.replace(/'/g, "\\'");
-          const escapedCat = item.category.replace(/'/g, "\\'");
-          phoneLinkHtml = `<button class="link-phone-btn" onclick="openPhoneLinkModal('${item.menu_id}', '${escapedName}', '${escapedCat}')">📱 スマホ注文</button>`;
-        }
-
         let orderControlsHtml = '';
         if (rawOptionValue && String(rawOptionValue).trim() !== '') {
           item.options = String(rawOptionValue).trim();
@@ -450,7 +427,6 @@
             <div class="menu-meta">
               <div class="menu-price">${Number(item.price).toLocaleString()}</div>
               <div class="action-area">
-                ${phoneLinkHtml}
                 ${orderControlsHtml}
               </div>
             </div>
