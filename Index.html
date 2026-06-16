@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>注文アプリ</title>
@@ -429,7 +430,7 @@
     })();
   </script>
 
-  <script>
+ <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzvd7how1B-d5vKnCtPKSxqSpwyx-pZsHwOv6tm1YFHOt-HTuhXnaMrnoTJ6Wrx75nv9w/exec";
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -453,36 +454,43 @@
       setupSwipeEvents();
     };
 
-    // 非同期で短縮URLを取得し、低密度の読みやすいQRコードを描画する
-    async function openGlobalPhoneLinkModal() {
+    // 世界標準ライブラリを用いて安全・確実にローカルでQRコードを描画する
+    function openGlobalPhoneLinkModal() {
       const modal = document.getElementById('phone-link-modal');
       const canvas = document.getElementById('modal-qr-canvas');
       
-      if (canvas) {
-        canvas.innerHTML = '<p style="text-align:center; color:#888; padding:20px 0;">QRコードを最適化中...</p>';
-      }
-      modal.style.display = 'flex';
+      if (!canvas) return;
+      
+      // 一度中身を完全にクリアする
+      canvas.innerHTML = '';
 
-      // 連携させたい現在の長いURLを構成
+      // 連携させたい現在のURLを取得
       const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}`;
       
-      let qrContent = targetUrl;
       try {
-        // 無料の短縮URL API（is.gd）を利用して超長文URLを約20文字に圧縮
-        const shortenerUrl = `https://is.gd/create.php?format=json&url=${encodeURIComponent(targetUrl)}`;
-        const res = await fetch(shortenerUrl);
-        const json = await res.json();
-        if (json.shorturl) {
-          qrContent = json.shorturl; // 短縮に成功したらそちらを採用
-        }
-      } catch (e) {
-        console.warn("URL短縮に失敗したため、通常のURLでフォールバックします:", e);
-      }
+        // qrcode.jsライブラリを実行（GASの長文URLに自動最適化されます）
+        new QRCode(canvas, {
+          text: targetUrl,
+          width: 240,
+          height: 240,
+          colorDark : "#000000",
+          colorLight : "#ffffff",
+          correctLevel : QRCode.CorrectLevel.M // 読み取りやすさと密度のバランスが良い中位レベル
+        });
 
-      // ドットを大きくするためにエラー訂正レベルを「L（低：7%）」に指定し、認識性を最優先
-      const qrImageUrl = `https://chart.googleapis.com/chart?cht=qr&chs=250x250&chld=L|1&chl=${encodeURIComponent(qrContent)}`;
-      if (canvas) {
-        canvas.innerHTML = `<img src="${qrImageUrl}" alt="スマホ連携用QR" style="width:100%; height:auto; display:block; margin:0 auto; max-width:250px;">`;
+        // 描画された画像がモーダル内で中央に寄るようにスタイルを微調整
+        const qrImg = canvas.querySelector('img');
+        if (qrImg) {
+          qrImg.style.margin = "0 auto";
+          qrImg.style.display = "block";
+          qrImg.style.maxWidth = "100%";
+          qrImg.style.height = "auto";
+        }
+
+        modal.style.display = 'flex';
+      } catch(e) {
+        console.error("QR Generation Error: ", e);
+        canvas.innerHTML = '<p style="text-align:center; color:red; padding:10px;">QRコードの生成に失敗しました。</p>';
       }
     }
 
