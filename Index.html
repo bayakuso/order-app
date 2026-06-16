@@ -73,7 +73,6 @@
     .wifi-connect-box { margin: 10px 0; padding: 12px; background-color: #fff; border: 1px dashed #333; border-radius: 4px; }
     .wifi-btn { display: block; width: 100%; box-sizing: border-box; padding: 10px; background-color: #333; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; text-decoration: none; text-align: center; }
     
-    /* 初期スタイルから display: none; を完全撤去（競合を排除） */
     .qr-container-box { margin: 10px 0; padding: 12px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; }
     .qr-title { font-size: 13px; font-weight: bold; color: #333; margin-bottom: 6px; }
     .qr-image-wrapper { display: flex; justify-content: center; margin: 8px 0; }
@@ -143,7 +142,7 @@
         <div id="section-qr-display" class="qr-container-box">
           <p class="qr-title">📱 ご自身のスマホからも注文できます</p>
           <div class="qr-image-wrapper">
-            <img id="dynamic-qr-img" src="" alt="注文用QRコード">
+            <img id="dynamic-qr-img" src="data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22 viewBox=%220 0 150 150%22><rect width=%22150%22 height=%22150%22 fill=%22%23eee%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23aaa%22 font-size=%2212%22>QR Loading...</text></svg>" alt="注文用QRコード">
           </div>
           <p class="qr-desc">カメラで読み取るだけで、お席を移動せずにお手元のスマートフォンからお品書きの閲覧・追加注文が可能です。</p>
         </div>
@@ -216,6 +215,18 @@
 
     const NO_IMAGE_SVG = "data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22 viewBox=%220 0 400 300%22><rect width=%22400%22 height=%22300%22 fill=%22%23e0e0e0%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23888888%22 font-family=%22sans-serif%22 font-size=%2224%22 font-weight=%22bold%22>No Image</text></svg>";
 
+    // QRコード生成ロジックの関数化（タイミング競合対策）
+    function generateTableQRCode() {
+      const elQrImg = document.getElementById('dynamic-qr-img');
+      if (!elQrImg) return;
+      
+      // クエリパラメータを正確に引き継いだフルURLを生成
+      const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}`;
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(targetUrl)}`;
+      
+      elQrImg.src = qrApiUrl;
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('display-table-id').innerText = tableId;
       
@@ -227,15 +238,16 @@
       elModal.style.display = 'flex';
       
       if (isViewer) {
-        // 常設端末表示：Wi-Fi接続を表示し、QRコード枠は初期状態をキープ
         elWifi.style.display = 'block';
         elGuest.style.display = 'none';
+        elQr.style.display = 'block'; // 確実に表示
         
-        // 個人端末用のURLを動的にQR生成APIへ渡す
-        const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}`;
-        document.getElementById('dynamic-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(targetUrl)}`;
+        // 1回目のQRコード構築アプローチ
+        generateTableQRCode();
+        
+        // レンダリング遅延対策として50ms後に再実行
+        setTimeout(generateTableQRCode, 50);
       } else {
-        // 個人端末表示：Wi-FiとQRコード枠を強制消去し、人数選択を表示
         elWifi.style.display = 'none';
         elQr.style.display = 'none';
         elGuest.style.display = 'block';
@@ -476,7 +488,7 @@
     }
 
     async function requestCheckout() {
-      if (!confirm("お会計（伝票の締め処理）を要請しますか？\n※確定するとスマホの注文履歴がリセットされます。")) return;
+      if (!confirm("お会計（伝票の締め処理）を要現しますか？\n※確定するとスマホの注文履歴がリセットされます。")) return;
       
       const btn = document.getElementById('checkout-action-btn');
       btn.disabled = true;
