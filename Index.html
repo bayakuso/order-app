@@ -48,7 +48,6 @@
     .hotaru-glow { animation: hotaruAnimation 2.5s infinite ease-in-out; }
     @keyframes hotaruAnimation { 0% { opacity: 0.4; box-shadow: 0 0 2px rgba(211, 47, 47, 0.4); } 50% { opacity: 1; box-shadow: 0 0 10px rgba(211, 47, 47, 0.8), 0 0 15px rgba(211, 47, 47, 0.4); } 100% { opacity: 0.4; box-shadow: 0 0 2px rgba(211, 47, 47, 0.4); } }
     
-    /* モーダル表示構造の適正化 */
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; justify-content: center; align-items: center; padding: 10px; }
     .modal-sheet { background: #fff; width: 100%; max-width: 400px; border-radius: 5px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
     .modal-header { background: #333; color: #fff; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
@@ -74,11 +73,11 @@
     .wifi-connect-box { margin: 10px 0; padding: 12px; background-color: #fff; border: 1px dashed #333; border-radius: 4px; }
     .wifi-btn { display: block; width: 100%; box-sizing: border-box; padding: 10px; background-color: #333; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; text-decoration: none; text-align: center; }
     
-    /* QRコード表示ボックス構造調整 */
-    .qr-container-box { margin: 10px 0; padding: 12px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; display: none; }
+    /* 初期スタイルから display: none; を完全撤去（競合を排除） */
+    .qr-container-box { margin: 10px 0; padding: 12px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; }
     .qr-title { font-size: 13px; font-weight: bold; color: #333; margin-bottom: 6px; }
     .qr-image-wrapper { display: flex; justify-content: center; margin: 8px 0; }
-    .qr-image-wrapper img { width: 130px; height: 130px; border: 1px solid #ccc; background: #fff; padding: 4px; display: block; }
+    .qr-image-wrapper img { width: 135px; height: 135px; border: 1px solid #ccc; background: #fff; padding: 4px; display: block; }
     .qr-desc { font-size: 11px; color: #666; line-height: 1.4; text-align: left; }
 
     .toast-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 300; display: none; justify-content: center; align-items: center; padding: 20px; }
@@ -228,14 +227,15 @@
       elModal.style.display = 'flex';
       
       if (isViewer) {
+        // 常設端末表示：Wi-Fi接続を表示し、QRコード枠は初期状態をキープ
         elWifi.style.display = 'block';
-        elQr.style.display = 'block'; // スタイル書き換えを強制
         elGuest.style.display = 'none';
         
-        // 個人端末（viewパラメータなし）用のURLを組み立ててQRコード生成
+        // 個人端末用のURLを動的にQR生成APIへ渡す
         const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}`;
         document.getElementById('dynamic-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(targetUrl)}`;
       } else {
+        // 個人端末表示：Wi-FiとQRコード枠を強制消去し、人数選択を表示
         elWifi.style.display = 'none';
         elQr.style.display = 'none';
         elGuest.style.display = 'block';
@@ -476,7 +476,7 @@
     }
 
     async function requestCheckout() {
-      if (!confirm("お会計（伝票の締め処理）を要現しますか？\n※確定するとスマホの注文履歴がリセットされます。")) return;
+      if (!confirm("お会計（伝票の締め処理）を要請しますか？\n※確定するとスマホの注文履歴がリセットされます。")) return;
       
       const btn = document.getElementById('checkout-action-btn');
       btn.disabled = true;
