@@ -453,20 +453,36 @@
       setupSwipeEvents();
     };
 
-    function openGlobalPhoneLinkModal() {
+    // 非同期で短縮URLを取得し、低密度の読みやすいQRコードを描画する
+    async function openGlobalPhoneLinkModal() {
       const modal = document.getElementById('phone-link-modal');
+      const canvas = document.getElementById('modal-qr-canvas');
+      
+      if (canvas) {
+        canvas.innerHTML = '<p style="text-align:center; color:#888; padding:20px 0;">QRコードを最適化中...</p>';
+      }
+      modal.style.display = 'flex';
+
+      // 連携させたい現在の長いURLを構成
       const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}`;
       
+      let qrContent = targetUrl;
       try {
-        const canvas = document.getElementById('modal-qr-canvas');
-        if (canvas) {
-          // 高精度・堅牢エンジンによるQR描画の実行
-          canvas.innerHTML = QRGenerator.generate(targetUrl);
+        // 無料の短縮URL API（is.gd）を利用して超長文URLを約20文字に圧縮
+        const shortenerUrl = `https://is.gd/create.php?format=json&url=${encodeURIComponent(targetUrl)}`;
+        const res = await fetch(shortenerUrl);
+        const json = await res.json();
+        if (json.shorturl) {
+          qrContent = json.shorturl; // 短縮に成功したらそちらを採用
         }
-        modal.style.display = 'flex';
-      } catch(e) {
-        console.error("QR Generation Error: ", e);
-        alert("QRコードの構成時に致命的なエラーが発生しました。");
+      } catch (e) {
+        console.warn("URL短縮に失敗したため、通常のURLでフォールバックします:", e);
+      }
+
+      // ドットを大きくするためにエラー訂正レベルを「L（低：7%）」に指定し、認識性を最優先
+      const qrImageUrl = `https://chart.googleapis.com/chart?cht=qr&chs=250x250&chld=L|1&chl=${encodeURIComponent(qrContent)}`;
+      if (canvas) {
+        canvas.innerHTML = `<img src="${qrImageUrl}" alt="スマホ連携用QR" style="width:100%; height:auto; display:block; margin:0 auto; max-width:250px;">`;
       }
     }
 
