@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>注文アプリ</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
     body { background-color: #f5f5f5; color: #333; padding-bottom: 80px; overflow-x: hidden; min-height: 100vh; }
@@ -19,10 +20,9 @@
     .category-tab { flex: 0 0 auto; padding: 14px 16px; color: #666; font-weight: bold; border-bottom: 3px solid transparent; cursor: pointer; font-size: 0.95rem; line-height: 1; }
     .category-tab.active { color: #d32f2f; border-bottom-color: #d32f2f; }
     
-    /* 案内ボードとメニューが並ぶ大元のメイン領域 */
     .app-main-layout { max-width: 1000px; margin: 143px auto 0 auto; padding: 10px; }
     
-    /* 常設端末用の埋め込みインフォボード（縦短冊時代のように最初からそこにある構造） */
+    /* 埋め込みインフォボード */
     .embedded-info-board { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .info-welcome-box { background-color: #fff8f8; border: 1px solid #ffcccc; border-radius: 4px; padding: 12px; margin-bottom: 12px; text-align: center; }
     .info-split-row { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
@@ -85,7 +85,10 @@
     .qr-container-box { padding: 12px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; text-align: center; }
     .qr-title { font-size: 13px; font-weight: bold; color: #333; margin-bottom: 6px; }
     .qr-image-wrapper { display: flex; justify-content: center; margin: 8px 0; }
-    .qr-image-wrapper img { width: 135px; height: 135px; border: 1px solid #ccc; background: #fff; padding: 4px; display: block; }
+    /* ライブラリが組み立てる領域用の設定。サイズを厳密に固定 */
+    #dynamic-qr-canvas { width: 135px; height: 135px; border: 1px solid #ccc; background: #fff; padding: 4px; display: inline-block; }
+    /* ライブラリ生成時に自動挿入される内部のimgタグ用スタイル調整 */
+    #dynamic-qr-canvas img { display: block; width: 100% !important; height: 100% !important; }
     .qr-desc { font-size: 11px; color: #666; line-height: 1.4; text-align: left; }
 
     .toast-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 300; display: none; justify-content: center; align-items: center; padding: 20px; }
@@ -127,7 +130,7 @@
           <div class="qr-container-box">
             <p class="qr-title">📱 ご自身のスマホからも注文できます</p>
             <div class="qr-image-wrapper">
-              <img id="dynamic-qr-img" src="" alt="注文用QRコード">
+              <div id="dynamic-qr-canvas"></div>
             </div>
             <p class="qr-desc">カメラで読み取るだけで、お手元のスマートフォンから注文が可能です。</p>
           </div>
@@ -242,15 +245,25 @@
       document.getElementById('display-table-id').innerText = tableId;
       
       if (isViewer) {
-        // 【常設端末モード】ポップアップモーダルは一切使わず、画面上部に案内ボードを固定出現させる
         document.getElementById('embedded-viewer-info').style.display = 'block';
         document.getElementById('customer-modal').style.display = 'none';
         
-        // 個人端末用のURLを作ってQRコードを即時反映
+        // 個人端末誘導用の純粋なURLパラメーターを構築
         const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}`;
-        document.getElementById('dynamic-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(targetUrl)}`;
+        
+        // 【自律スタンドアロン生成】外部にリクエストを出さず、ブラウザ内部でQRを組み立てて出力
+        const qrContainer = document.getElementById('dynamic-qr-canvas');
+        qrContainer.innerHTML = ''; // 念のため初期化
+        new QRCode(qrContainer, {
+          text: targetUrl,
+          width: 125,
+          height: 125,
+          colorDark : "#000000",
+          colorLight : "#ffffff",
+          correctLevel : QRCode.CorrectLevel.M
+        });
+
       } else {
-        // 【個人端末モード】埋め込みボードは隠し、従来どおり人数選択ポップアップを立ち上げる
         document.getElementById('embedded-viewer-info').style.display = 'none';
         document.getElementById('customer-modal').style.display = 'flex';
       }
