@@ -1,436 +1,489 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>注文アプリ</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-    body { background-color: #f5f5f5; color: #333; padding-bottom: 80px; overflow-x: hidden; min-height: 100vh; }
-    
-    header { background-color: #333; color: #fff; padding: 10px 15px; position: fixed; top: 0; left: 0; right: 0; height: 85px; z-index: 110; display: flex; justify-content: space-between; align-items: center; }
-    .header-left { display: flex; flex-direction: column; justify-content: center; }
-    .header-title { font-size: 1.1rem; font-weight: bold; }
-    .header-status-bar { display: flex; gap: 6px; margin-top: 5px; flex-wrap: nowrap; }
-    .table-badge { display: inline-block; background: #e0e0e0; color: #333; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; white-space: nowrap; }
-    .status-badge { display: inline-block; background: #555; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; white-space: nowrap; }
-    
-    /* 右上固定のスマホ連携ボタン */
-    .header-right { flex-shrink: 0; }
-    .header-link-btn { background-color: #007aff; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-    .header-link-btn:active { background-color: #0056b3; }
+    /* ==========================================
+       レスポンシブ・マルチデバイス最適化（追加・修正）
+       ========================================== */
+    .modal-content {
+      background: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      width: 90% !important; /* 画面幅に合わせて伸縮 */
+      max-width: 400px !important; /* タブレット等で広がりすぎない制限 */
+      max-height: 85vh;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      box-sizing: border-box !important;
+      display: flex;
+      flex-direction: column;
+    }
 
-    .category-nav { display: flex; overflow-x: auto; background: #fff; border-bottom: 1px solid #ccc; position: fixed; top: 85px; left: 0; right: 0; height: 48px; z-index: 100; }
-    .category-nav::-webkit-scrollbar { display: none; }
-    .category-tab { flex: 0 0 auto; padding: 14px 16px; color: #666; font-weight: bold; border-bottom: 3px solid transparent; cursor: pointer; font-size: 0.95rem; line-height: 1; }
-    .category-tab.active { color: #d32f2f; border-bottom-color: #d32f2f; }
+    /* QRコード表示エリアの崩れを防止 */
+    #modal-qr-canvas {
+      width: 200px !important;
+      height: 200px !important;
+      margin: 15px auto !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
     
-    .app-main-layout { max-width: 1000px; margin: 143px auto 0 auto; padding: 10px; }
-    
-    .menu-container { transition: transform 0.2s ease-out, opacity 0.2s ease-out; display: grid; grid-template-columns: 1fr; gap: 10px; align-content: start; }
-    .menu-card { background: #fff; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; display: flex; height: 110px; }
-    .menu-img { width: auto; height: 100%; aspect-ratio: 4 / 3; object-fit: cover; background-color: #eee; flex-shrink: 0; }
-    .menu-details { padding: 8px 10px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; min-width: 0; }
-    .menu-name { font-size: 0.95rem; font-weight: bold; color: #000; line-height: 1.3; }
-    .menu-meta { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; gap: 5px; }
-    .menu-price { font-size: 1.1rem; font-weight: bold; color: #d32f2f; white-space: nowrap; }
-    .menu-price::after { content: " 円"; font-size: 0.8rem; color: #666; }
-    
-    .action-area { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-    .controls-row { display: flex; align-items: center; gap: 4px; }
-    
-    .qty-btn { width: 28px; height: 28px; background-color: #f0f0f0; color: #333; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; user-select: none; }
-    .qty-btn:active { background-color: #ddd; }
-    .qty-display { min-width: 20px; text-align: center; font-size: 0.95rem; font-weight: bold; }
-    
-    .add-cart-btn { background-color: #d32f2f; color: white; border: none; padding: 0 10px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; cursor: pointer; height: 28px; }
-    .add-cart-btn.has-option { background-color: #666; }
-    
-    .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #333; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; z-index: 110; gap: 8px; }
-    .cart-bar-left { color: #ccc; font-size: 0.8rem; font-weight: bold; letter-spacing: 0px; white-space: nowrap; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; }
-    .cart-actions { display: flex; gap: 8px; flex-shrink: 0; }
-    .btn-wrapper { position: relative; }
-    .bar-btn { padding: 10px 12px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; border: none; cursor: pointer; height: 40px; white-space: nowrap; }
-    .history-btn { background: #555; color: #fff; }
-    .view-cart-btn { background: #d32f2f; color: #fff; }
-    .notification-badge { position: absolute; top: -6px; right: -6px; background-color: #d32f2f; color: white; font-size: 0.75rem; font-weight: bold; min-width: 18px; height: 18px; border-radius: 50%; display: none; align-items: center; justify-content: center; padding: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 115; }
-    .hotaru-glow { animation: hotaruAnimation 2.5s infinite ease-in-out; }
-    @keyframes hotaruAnimation { 0% { opacity: 0.4; box-shadow: 0 0 2px rgba(211, 47, 47, 0.4); } 50% { opacity: 1; box-shadow: 0 0 10px rgba(211, 47, 47, 0.8), 0 0 15px rgba(211, 47, 47, 0.4); } 100% { opacity: 0.4; box-shadow: 0 0 2px rgba(211, 47, 47, 0.4); } }
-    
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; justify-content: center; align-items: center; padding: 10px; }
-    .modal-sheet { background: #fff; width: 100%; max-width: 400px; border-radius: 5px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
-    .modal-header { background: #333; color: #fff; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-    .modal-close { background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; }
-    .modal-body { padding: 15px 20px; overflow-y: auto; flex-grow: 1; }
-    .modal-footer { padding: 10px; background: #f5f5f5; border-top: 1px solid #ddd; display: flex; justify-content: flex-end; gap: 5px; }
-    
-    .history-total-banner { background-color: #fff8f2; border: 1px solid #f5e6d3; border-radius: 4px; padding: 12px; margin-bottom: 15px; text-align: center; }
-    .history-total-label { font-size: 0.85rem; color: #666; margin-bottom: 2px; }
-    .history-total-value { font-size: 1.4rem; font-weight: bold; color: #d32f2f; }
-    .cart-item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #ddd; }
-    .cart-item-info { flex-grow: 1; }
-    .cart-item-name { font-weight: bold; }
-    .cart-item-price-label { font-size: 0.8rem; color: #666; }
-    
-    .option-group { margin-bottom: 10px; }
-    .option-title { font-weight: bold; margin-bottom: 5px; }
-    .option-label { display: block; padding: 8px; border: 1px solid #ddd; margin-bottom: 5px; border-radius: 3px; }
-    
-    .guest-select-wrapper { position: relative; width: 100%; max-width: 200px; margin: 0 auto; }
-    .guest-select { width: 100%; padding: 10px; font-size: 16px; font-weight: bold; border: 1px solid #333; border-radius: 4px; background: #fff; text-align: center; }
-    
-    .wifi-connect-box { text-align: center; padding: 10px 0; }
-    .wifi-btn { display: block; width: 100%; box-sizing: border-box; padding: 12px; background-color: #333; color: white; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; text-decoration: none; text-align: center; margin-top: 15px; }
-    
-    .qr-container-box { text-align: center; }
-    .qr-image-wrapper { display: flex; justify-content: center; margin: 15px 0; }
-    .qr-canvas-target { width: 140px; height: 140px; border: 1px solid #ccc; background: #fff; padding: 4px; display: inline-block; }
-    .qr-canvas-target svg { width: 100% !important; height: 100% !important; display: block; }
+    /* ライブラリが自動生成するimgタグを枠内に完全フィットさせる */
+    #modal-qr-canvas img, #modal-qr-canvas canvas {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 200px !important;
+      max-height: 200px !important;
+      display: block;
+      margin: 0 auto;
+    }
 
-    .toast-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 300; display: none; justify-content: center; align-items: center; padding: 20px; }
-    .toast-card { background: #fff; border-top: 4px solid #d32f2f; border-radius: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 25px 20px; text-align: center; width: 100%; max-width: 320px; animation: toastPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    @keyframes toastPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .toast-icon { font-size: 2.2rem; margin-bottom: 12px; }
-    .toast-title { font-size: 1.1rem; font-weight: bold; color: #333; margin-bottom: 6px; }
-    .toast-msg { font-size: 0.9rem; color: #666; }
-    .checkout-btn { background-color: #ff9800; color: white; font-weight: bold; }
+    /* モーダル内の案内テキスト調整 */
+    .modal-content p {
+      margin: 10px 0;
+      color: #555;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    /* メニューリスト全体のコンテナを中央寄せ制限（タブレット対応） */
+    #menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 10px 16px 80px 16px;
+      transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+      max-width: 768px;
+      margin: 0 auto;
+    }
+
+    /* メニューカードのレスポンシブ化 */
+    .menu-card {
+      display: flex;
+      background: #fff;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      align-items: center;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    /* ─── 以下、既存のベースデザインを維持 ─── */
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f8f9fa;
+      color: #333;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    header {
+      background: #333;
+      color: #fff;
+      padding: 12px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    .phone-link-btn {
+      background: #0277bd;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .header-status-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+    .status-badge {
+      background: rgba(255,255,255,0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+    .category-container {
+      position: sticky;
+      top: 75px;
+      background: #fff;
+      z-index: 90;
+      border-bottom: 1px solid #e0e0e0;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+    }
+    .category-container::-webkit-scrollbar { display: none; }
+    .category-bar { display: inline-flex; padding: 0 8px; }
+    .category-tab {
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #666;
+      cursor: pointer;
+      position: relative;
+    }
+    .category-tab.active { color: #d32f2f; }
+    .category-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 16px;
+      right: 16px;
+      height: 3px;
+      background: #d32f2f;
+      border-radius: 2px;
+    }
+    .menu-img {
+      width: 90px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 6px;
+      margin-right: 12px;
+      background: #eee;
+      flex-shrink: 0;
+    }
+    .menu-details {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-width: 0;
+    }
+    .menu-name {
+      font-size: 0.95rem;
+      font-weight: bold;
+      margin-bottom: 4px;
+      white-space: normal;
+      word-break: break-all;
+    }
+    .menu-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+    }
+    .menu-price {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #d32f2f;
+    }
+    .menu-price::after { content: ' 円'; font-size: 0.8rem; color: #333; }
+    .controls-row {
+      display: flex;
+      align-items: center;
+      background: #eee;
+      border-radius: 4px;
+      padding: 2px;
+    }
+    .qty-btn {
+      width: 28px;
+      height: 28px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .qty-display {
+      min-width: 24px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    .add-cart-btn {
+      background: #d32f2f;
+      color: #fff;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .add-cart-btn.has-option { background: #757575; padding: 6px 16px; }
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #212121;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+      z-index: 110;
+    }
+    .bottom-hint { font-size: 0.8rem; color: #aaa; }
+    .bottom-actions { display: flex; gap: 8px; }
+    .nav-btn {
+      background: #424242;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      position: relative;
+    }
+    .nav-btn.primary { background: #d32f2f; border: none; }
+    .badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #ff9800;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: bold;
+      border-radius: 10px;
+      padding: 2px 6px;
+      min-width: 12px;
+      text-align: center;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    .modal-title { font-size: 1.1rem; font-weight: bold; }
+    .close-x { font-size: 1.4rem; color: #999; cursor: pointer; }
+    .guest-select {
+      width: 100%;
+      padding: 10px;
+      font-size: 1.1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    .modal-submit-btn {
+      width: 100%;
+      background: #d32f2f;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .modal-submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+    .cart-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .cart-item-info { flex: 1; padding-right: 10px; }
+    .cart-item-name { font-size: 0.95rem; font-weight: bold; }
+    .cart-item-price-label { font-size: 0.85rem; color: #666; margin-top: 2px; }
+    .option-title { font-size: 1rem; font-weight: bold; margin-bottom: 10px; }
+    .option-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid #eee;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .option-label input { transform: scale(1.2); }
+    .toast-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      width: 85%;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .toast-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .toast-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 6px; }
+    .toast-body { font-size: 0.9rem; color: #666; }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="header-left">
+    <div class="header-top">
       <div class="header-title">注文アプリ</div>
-      <div class="header-status-bar">
-        <div class="table-badge"><span id="display-table-id">--</span> 番卓</div>
-        <div class="status-badge" id="display-guest-badge" style="display:none;"><span id="display-guest-count">--</span> 名様</div>
-        <div class="status-badge" id="display-time-badge" style="display:none;">開始 <span id="display-start-time">--:--</span></div>
+      <div id="header-link-area" style="display:none;">
+        <button class="phone-link-btn" onclick="openGlobalPhoneLinkModal()">📱 スマホ連携</button>
       </div>
     </div>
-    <!-- 常設端末判定（view=true）のときだけ表示する右上連携ボタン -->
-    <div class="header-right" id="header-link-area" style="display:none;">
-      <button class="header-link-btn" onclick="openGlobalPhoneLinkModal()">📱 スマホ連携</button>
+    <div class="header-status-row">
+      <span class="status-badge"><span id="display-table-id">A</span> 番卓</span>
+      <span class="status-badge" id="display-guest-badge" style="display:none;"><span id="display-guest-count">1</span> 名様</span>
+      <span class="status-badge" id="display-time-badge" style="display:none;">開始 <span id="display-start-time">--:--</span></span>
     </div>
   </header>
 
-  <nav class="category-nav" id="category-bar"></nav>
-
-  <div class="app-main-layout">
-    <!-- メニューリスト表示エリア -->
-    <main class="menu-container" id="menu-list">
-      <p style="text-align:center; padding:20px; color:#666;">データを読み込み中...</p>
-    </main>
+  <div class="category-container">
+    <div class="category-bar" id="category-bar"></div>
   </div>
 
-  <div class="cart-bar">
-    <div class="cart-bar-left">お気軽にご注文ください</div>
-    <div class="cart-actions">
-      <button class="bar-btn history-btn" onclick="openHistoryModal()">注文履歴</button>
-      <div class="btn-wrapper">
-        <button class="bar-btn view-cart-btn" onclick="openCartModal()">カートを見る</button>
-        <div class="notification-badge hotaru-glow" id="cart-badge-count">0</div>
-      </div>
+  <div id="menu-list">
+    <p style="text-align:center; color:#666; padding:20px;">メニューを読み込み中...</p>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="bottom-hint">お気軽にご注文ください</div>
+    <div class="bottom-actions">
+      <button class="nav-btn" onclick="openHistoryModal()">注文履歴</button>
+      <button class="nav-btn primary" onclick="openCartModal()">
+        カートを見る
+        <div class="badge" id="cart-badge-count">0</div>
+      </button>
     </div>
   </div>
 
-  <!-- 人数選択ポップアップ（常設・個人スマホ一元化） -->
-  <div id="customer-modal" class="modal-overlay" style="display:none;">
-    <div class="modal-sheet" style="text-align:center;">
-      <div class="modal-header"><div style="width:100%; text-align:center;">ご案内</div></div>
-      <div class="modal-body">
-        <div style="background-color: #fff8f8; border: 1px solid #ffcccc; border-radius: 4px; padding: 12px; margin-bottom: 12px;">
-          <p style="font-size:14px; font-weight:bold; color:#d32f2f; margin-bottom:4px;">本日のお通し：特製おつまみ三品盛り</p>
-          <p style="font-size:12px; color:#666; line-height:1.4;">※席料、お通しとしてお一人様 1,000円（税込）を頂戴いたします。</p>
-        </div>
-        
-        <div style="margin-bottom:15px;">
-          <label style="display:block;font-size:14px;margin-bottom:8px;font-weight:bold;">人数を選択してください</label>
-          <div class="guest-select-wrapper">
-            <select id="modal-guest-count" class="guest-select">
-              <option value="1">1 名</option><option value="2">2 名</option><option value="3">3 名</option>
-              <option value="4">4 名</option><option value="5">5 名</option><option value="6">6 名</option>
-            </select>
-          </div>
-        </div>
-
-        <button onclick="submitModalQty()" style="width:85%;padding:12px;font-size:15px;font-weight:bold;background:#d32f2f;color:white;border:none;border-radius:4px;cursor:pointer;margin-top:10px;">お品書きを見る</button>
+  <div class="modal-overlay" id="customer-modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">ご来店ありがとうございます</div>
       </div>
+      <p style="text-align:left; margin-bottom:10px;">ご利用人数を選択してください。</p>
+      <select class="guest-select" id="modal-guest-count">
+        <option value="1">1 名様</option>
+        <option value="2">2 名様</option>
+        <option value="3">3 名様</option>
+        <option value="4">4 名様</option>
+        <option value="5">5 名様</option>
+        <option value="6">6 名様</option>
+        <option value="7">7 名様</option>
+        <option value="8">8 名様</option>
+      </select>
+      <button class="modal-submit-btn" onclick="submitModalQty()">確定してメニューへ</button>
     </div>
   </div>
 
-  <!-- カートモーダル -->
-  <div id="cart-modal" class="modal-overlay">
-    <div class="modal-sheet">
-      <div class="modal-header"><div>注文確認</div><button class="modal-close" onclick="closeModal('cart-modal')">×</button></div>
-      <div class="modal-body" id="cart-list-items"></div>
-      <div class="modal-footer">
-        <button class="bar-btn history-btn" onclick="closeModal('cart-modal')">戻る</button>
-        <button class="bar-btn view-cart-btn" id="send-order-btn" onclick="sendBulkOrder()">注文を確定する</button>
+  <div class="modal-overlay" id="cart-modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">カートの中身</div>
+        <div class="close-x" onclick="closeModal('cart-modal')">&times;</div>
       </div>
+      <div id="cart-list-items" style="flex:1; overflow-y:auto; max-height:50vh; margin-bottom:15px;"></div>
+      <button class="modal-submit-btn" id="send-order-btn" onclick="sendBulkOrder()">注文を確定する</button>
     </div>
   </div>
 
-  <!-- 注文履歴モーダル -->
-  <div id="history-modal" class="modal-overlay">
-    <div class="modal-sheet">
-      <div class="modal-header"><div>注文履歴</div><button class="modal-close" onclick="closeModal('history-modal')">×</button></div>
-      <div class="modal-body">
-        <div class="history-total-banner" id="history-total-banner-area" style="display:none;">
-          <div class="history-total-label">これまでの合計金額</div>
-          <div class="history-total-value" id="history-cumulative-total">0 円</div>
-        </div>
-        <div id="history-list-items"></div>
+  <div class="modal-overlay" id="history-modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">ご注文履歴</div>
+        <div class="close-x" onclick="closeModal('history-modal')">&times;</div>
       </div>
-      <div class="modal-footer" style="justify-content: space-between;">
-        <button class="bar-btn checkout-btn" id="checkout-action-btn" onclick="requestCheckout()">お会計に進む</button>
-        <button class="bar-btn view-cart-btn" onclick="closeModal('history-modal')" style="background:#555;">閉じる</button>
+      <div id="history-list-items" style="flex:1; overflow-y:auto; max-height:45vh; margin-bottom:10px;"></div>
+      <div id="history-total-banner-area" style="display:none; padding:12px; background:#f5f5f5; border-radius:6px; margin-bottom:12px; text-align:right; font-weight:bold;">
+        現在の合計金額: <span id="history-cumulative-total" style="color:#d32f2f; font-size:1.2rem;">0 円</span>
       </div>
+      <button class="modal-submit-btn" id="checkout-action-btn" style="background:#4caf50; display:none;" onclick="requestCheckout()">お会計に進む</button>
     </div>
   </div>
 
-  <!-- オプション選択モーダル -->
-  <div id="option-modal" class="modal-overlay">
-    <div class="modal-sheet">
-      <div class="modal-header"><div>選択</div><button class="modal-close" onclick="closeModal('option-modal')">×</button></div>
-      <div class="modal-body">
-        <div class="option-group"><div class="option-title">項目を選択してください</div><div id="option-container-list"></div></div>
-        <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
-          <span style="font-weight:bold; font-size:14px;">数量：</span>
-          <div class="action-area" style="flex-direction:row;">
-            <button class="qty-btn" onclick="changeModalQty(-1)">−</button>
-            <span class="qty-display" id="modal-qty-val">1</span>
-            <button class="qty-btn" onclick="changeModalQty(1)">+</button>
-          </div>
+  <div class="modal-overlay" id="option-modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="option-title">商品の選択</div>
+        <div class="close-x" onclick="closeModal('option-modal')">&times;</div>
+      </div>
+      <div id="option-container-list" style="flex:1; overflow-y:auto; max-height:40vh; margin-bottom:15px;"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:#f9f9f9; padding:8px; border-radius:6px;">
+        <span style="font-weight:bold; font-size:0.95rem;">数量</span>
+        <div class="controls-row">
+          <button class="qty-btn" onclick="changeModalQty(-1)">−</button>
+          <span class="qty-display" id="modal-qty-val">1</span>
+          <button class="qty-btn" onclick="changeModalQty(1)">+</button>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="bar-btn history-btn" onclick="closeModal('option-modal')">キャンセル</button>
-        <button class="bar-btn view-cart-btn" id="option-confirm-submit-btn">確定</button>
-      </div>
+      <button class="modal-submit-btn" id="option-confirm-submit-btn">追加する</button>
     </div>
   </div>
 
-  <!-- スマホ同期用QRコードポップアップモーダル -->
-  <div id="phone-link-modal" class="modal-overlay">
-    <div class="modal-sheet" style="text-align:center;">
-      <div class="modal-header"><div>ご自身のスマホで注文</div><button class="modal-close" onclick="closeAndPromptWifi()">×</button></div>
-      <div class="modal-body">
-        <div class="qr-container-box">
-          <p style="font-size:14px; color:#333; font-weight:bold; margin-bottom:8px;">QRコードを読み取ってください</p>
-          <div class="qr-image-wrapper">
-            <div id="modal-qr-canvas" class="qr-canvas-target"></div>
-          </div>
-          <p style="font-size:12px; color:#666; line-height:1.4; padding:0 5px;">カメラでスキャンすると、この席（卓）の注文画面をお手元のスマートフォンに同期して開くことができます。</p>
-        </div>
+  <div class="modal-overlay" id="phone-link-modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">ご自身のスマホで注文</div>
+        <div class="close-x" onclick="closeModal('phone-link-modal')">&times;</div>
       </div>
-      <div class="modal-footer">
-        <button class="bar-btn view-cart-btn" onclick="closeAndPromptWifi()" style="background:#555; width:100%;">次へ (Wi-Fi接続の案内)</button>
-      </div>
+      <p style="font-weight:bold; margin-top:0;">QRコードを読み取ってください</p>
+      <div id="modal-qr-canvas"></div>
+      <p style="font-size:0.8rem; color:#666;">カメラでスキャンすると、このお席の注文画面をお手元のスマートフォンに同期して開くことができます。</p>
+      <button class="modal-submit-btn" style="background:#555; margin-top:10px;" onclick="closeAndPromptWifi()">次へ (Wi-Fi接続の案内)</button>
     </div>
   </div>
 
-  <!-- 店内Wi-Fi接続誘導用モーダル -->
-  <div id="wifi-prompt-modal" class="modal-overlay">
-    <div class="modal-sheet" style="text-align:center;">
-      <div class="modal-header"><div>店内の快適Wi-Fi</div><button class="modal-close" onclick="closeModal('wifi-prompt-modal')">×</button></div>
-      <div class="modal-body">
-        <div class="wifi-connect-box">
-          <p style="font-size:15px; font-weight:bold; color:#000; margin-bottom:6px;">店内の無料Wi-Fiに接続しますか？</p>
-          <p style="font-size:12px; color:#666; line-height:1.4;">スマートフォンでスムーズに注文、通信制限を気にせずご利用いただくために、店舗専用高速Wi-Fiを解放しております。</p>
-          <a href="WIFI:S:店名;T:WPA;P:パスワード;;" class="wifi-btn" onclick="closeModal('wifi-prompt-modal')">店舗Wi-Fiに自動接続</a>
-        </div>
+  <div class="modal-overlay" id="wifi-prompt-modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">店舗Wi-Fiのご案内</div>
+        <div class="close-x" onclick="closeModal('wifi-prompt-modal')">&times;</div>
       </div>
-      <div class="modal-footer">
-        <button class="bar-btn view-cart-btn" onclick="closeModal('wifi-prompt-modal')" style="background:#555;">閉じる</button>
-      </div>
+      <p style="text-align:left; font-weight:bold; margin-bottom:5px;">SSID: <span style="color:#d32f2f;">Free-WiFi-Izakaya</span></p>
+      <p style="text-align:left; font-weight:bold;">パスワード: <span style="color:#d32f2f;">12345678</span></p>
+      <p style="font-size:0.8rem; color:#777; text-align:left; margin-top:10px;">店内のWi-Fiに接続していただくと、より高速かつ安定した通信環境で電子注文をご利用いただけます。</p>
+      <button class="modal-submit-btn" style="background:#212121; margin-top:10px;" onclick="closeModal('wifi-prompt-modal')">閉じる</button>
     </div>
   </div>
 
-  <!-- トースト通知 -->
-  <div id="toast-popup" class="toast-overlay"><div class="toast-card"><div class="toast-icon" id="toast-icon-area"></div><div class="toast-title" id="toast-title-area"></div><div class="toast-msg" id="toast-msg-area"></div></div></div>
-
-  <!-- 外部依存無しの高精度ローカルQRコード生成エンジン -->
-  <script>
-    var MiniQR=function(){function k(a,g){this.typeNumber=a;this.errorCorrectLevel=g;this.modules=null;this.moduleCount=0;this.dataCache=null;this.dataList=[]}function q(a,g){if(void 0==a.length)throw Error(a.length+"/"+g);for(var d=0;d<a.length&&0==a[d];)d++;this.num=Array(a.length-d+g);for(var b=0;b<a.length-d;b++)this.num[b]=a[b+d]}function p(a,g){this.toNum=a;this.toAlpha=g}k.prototype={addData:function(a){this.dataList.push(new p(a))},isDark:function(a,g){if(0>a||this.moduleCount<=a||0>g||this.moduleCount<=g)throw Error(a+","+g);return this.modules[a][g]},getModuleCount:function(){return this.moduleCount},make:function(){this.makeImpl(!1,this.getBestMaskPattern())},makeImpl:function(a,g){this.moduleCount=4*this.typeNumber+17;this.modules=Array(this.moduleCount);for(var d=0;d<this.moduleCount;d++){this.modules[d]=Array(this.moduleCount);for(var b=0;b<this.moduleCount;b++)this.modules[d][b]=null}this.setupPositionProbePattern(0,0);this.setupPositionProbePattern(this.moduleCount-7,0);this.setupPositionProbePattern(0,this.moduleCount-7);this.setupPositionAdjustPattern();this.setupTimingPattern();this.setupTypeInfo(a,g);7<=this.typeNumber&&this.setupTypeNumber(a);null==this.dataCache&&(this.dataCache=k.createData(this.typeNumber,this.errorCorrectLevel,this.dataList));this.mapData(this.dataCache,g)},setupPositionProbePattern:function(a,g){for(var d=-1;7>=d;d++)if(!(-1>a+d||this.moduleCount<=a+d))for(var b=-1;7>=b;b++)-1>g+b||this.moduleCount<=g+b||(this.modules[a+d][g+b]=0<=d&&6>=d&&(0==d||6==d)||0<=b&&6>=b&&(0==b||6==b)||2<=d&&4>=d&&2<=b&&4>=b?!0:!1)},getBestMaskPattern:function(){for(var a=0,g=0,d=0;8>d;d++){this.makeImpl(!0,d);var b=f.getLostPoint(this);if(0==d||a>b)a=b,g=d}return g},setupTimingPattern:function(){for(var a=8;this.moduleCount-8>a;a++)null==this.modules[a][6]&&(this.modules[a][6]=0==a%2);for(var g=8;this.moduleCount-8>g;g++)null==this.modules[6][g]&&(this.modules[6][g]=0==g%2)},setupPositionAdjustPattern:function(){for(var a=f.getPatternPosition(this.typeNumber),g=0;g<a.length;g++)for(var d=0;d<a.length;d++){var b=a[g],e=a[d];if(null==this.modules[b][e])for(var c=-2;2>=c;c++)for(var h=-2;2>=h;h++)this.modules[b+c][e+h]=-2==c||2==c||-2==h||2==h||0==c&&0==h?!0:!1}},setupTypeNumber:function(a){for(var g=f.getBCHTypeNumber(this.typeNumber),d=0;18>d;d++){var b=!a&&1==((g>>d)&1);this.modules[Math.floor(d/3)][d%3+this.moduleCount-8-3]=b}for(d=0;18>d;d++)b=!a&&1==((g>>d)&1),this.modules[d%3+this.moduleCount-8-3][Math.floor(d/3)]=b},setupTypeInfo:function(a,g){for(var d=(this.errorCorrectLevel<<3)|g,b=f.getBCHTypeInfo(d),e=0;15>e;e++){var c=!a&&1==((b>>e)&1);10>e?this.modules[e][8]=c:6>e?this.modules[10-e-1][8]=c:this.modules[this.moduleCount-15+e][8]=c}for(e=0;15>e;e++)c=!a&&1==((b>>e)&1),8>e?this.modules[8][this.moduleCount-e-1]=c:9>e?this.modules[8][15-e-1+1]=c:this.modules[8][15-e-1]=c;this.modules[this.moduleCount-8][8]=!a},mapData:function(a,g){for(var d=-1,b=this.moduleCount-1,e=7,c=0,h=this.moduleCount-1;0<h;h-=2)for(6==h&&h--;;){for(var f=0;2>f;f++)if(null==this.modules[b][h-f]){var k=!1;c<a.length&&(k=1==((a[c]>>>e)&1));var p=this;var m=void 0;switch(g){case 0:m=0==(b+h-f)%2;break;case 1:m=0==b%2;break;case 2:m=0==(h-f)%3;break;case 3:m=0==(b+h-f)%3;break;case 4:m=0==(Math.floor(b/2)+Math.floor((h-f)/3))%2;break;case 5:m=0==(b*(h-f))%2+0==(b*(h-f))%3;break;case 6:m=0==((b*(h-f))%2+0==(b*(h-f))%3)%2;break;case 7:m=0==((b+h-f)%2+0==(b*(h-f))%3)%2;break;default:throw Error("pattern:"+g);}m&&(k=!k);this.modules[b][h-f]=k;e--;-1==e&&(c++,e=7)}b+=d;if(0>b||this.moduleCount<=b){b-=d;d=-d;break}}}},createSvg:function(a){a=a||2;var g=this.getModuleCount()*a,d="";d+='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+g+" "+g+'" width="'+g+'" height="'+g+'">';d+='<rect width="100%" height="100%" fill="#ffffff"/>';for(var b=0;b<this.getModuleCount();b++)for(var e=0;e<this.getModuleCount();e++)this.isDark(b,e)&&(d+='<rect x="'+e*a+'" y="'+b*a+'" width="'+a+'" height="'+a+'" fill="#000000"/>');return d+="</svg>"}};k.createData=function(a,g,d){g=m.getRSBlocks(a,g);for(var b=new l,e=0;e<d.length;e++){var c=d[e];b.put(4,4);b.put(c.toNum.length,f.getLengthInBits(a));for(var h=0;h<c.toNum.length;h++)b.put(c.toNum.charCodeAt(h),8)}for(e=a=0;e<g.length;e++)a+=g[e].dataCount;if(b.getLengthInBits()>8*a)throw Error("code length overflow. ("+b.getLengthInBits()+">"+8*a+")");for(b.getLengthInBits()+4<=8*a&&b.put(0,4);0!=b.getLengthInBits()%8;)b.putBit(!1);for(;!(b.getLengthInBits()>=8*a);){b.put(236,8);if(b.getLengthInBits()>=8*a)break;b.put(17,8)}return k.createBytes(b,g)};k.createBytes=function(a,g){for(var d=0,b=0,e=0,c=Array(g.length),h=Array(g.length),f=0;f<g.length;f++){var k=g[f].dataCount,p=g[f].totalCount-k;b=Math.max(b,k);e=Math.max(e,p);c[f]=Array(k);for(var m=0;m<c[f].length;m++)c[f][m]=255&a.buffer[m+d];d+=k;var l=f,r=void 0;r=void 0;var n=new q(c[l],p),w=new q(Array(p+1),0);w.num[0]=1;for(var t=0;t<p;t++){var x=w,y=void 0,A=void 0;A=u.gexp(u.glog(1)+t);y=new q([1,A],0);x=x.multiply(y);w=x}l=n.num.length;r=w.num.length;n=new q(n.num,r-1);for(t=0;0<=n.num.length-r;){var y=n.num[0],A=u.gexp(u.glog(y)-w.num[0]),B=Array(n.num.length);for(m=0;m<n.num.length;m++)B[m]=n.num[m];for(m=0;m<r;m++)B[m]^=u.gexp(u.glog(w.num[m])+A);y=new q(B,0);n=y}r=Array(p);for(m=0;m<p;m++)t=m+n.num.length-p,r[m]=0<=t?n.num[t]:0;h[f]=r}for(m=f=0;f<g.length;f++)m+=g[f].totalCount;d=Array(m);b=0;for(m=0;m<b;m++)for(f=0;f<g.length;f++)m<c[f].length&&(d[b++]=c[f][m]);for(m=0;m<e;m++)for(f=0;f<g.length;f++)m<h[f].length&&(d[b++]=h[f][m]);return d};p.prototype={getLength:function(){return this.toNum.length}};var f={PATTERN_POSITION_TABLE:[[],[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,30,56,82,106],[6,30,58,86,110],[6,34,62,90,114],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],G15:1335,G18:7973,G15_MASK:21522,getBCHTypeInfo:function(a){for(var g=a<<10;0<=f.getMSB(g)-f.getMSB(f.G15);)g^=f.G15<<(f.getMSB(g)-f.getMSB(f.G15));return((a<<10)|g)^f.G15_MASK},getBCHTypeNumber:function(a){for(var g=a<<12;0<=f.getMSB(g)-f.getMSB(f.G18);)g^=f.G18<<(f.getMSB(g)-f.getMSB(f.G18));return(a<<12)|g},getMSB:function(a){for(var g=0;0!=a;)g++,a>>>=1;return g},getPatternPosition:function(a){return f.PATTERN_POSITION_TABLE[a-1]},getLengthInBits:function(a){if(1<=a&&10>a)return 8;if(27>a)return 16;if(41>a)return 16;throw Error("type:"+a);},getLostPoint:function(a){for(var g=a.getModuleCount(),d=0,b=0;b<g;b++)for(var e=0;e<g;e++){for(var c=0,h=a.isDark(b,e),k=-1;1>=k;k++)if(!(0>b+k||g<=b+k))for(var p=-1;1>=p;p++)0>e+p||g<=e+p||0==k&&0==p||h==a.isDark(b+k,e+p)&&c++;5<c&&(d+=3+c-5)}for(b=0;b<g-1;b++)for(e=0;e<g-1;e++)c=0,a.isDark(b,e)&&c++,a.isDark(b+1,e)&&c++,a.isDark(b,e+1)&&c++,a.isDark(b+1,e+1)&&c++,0!=c&&4!=c||(d+=3);for(b=0;b<g;b++)for(e=0;e<g-6;e++)a.isDark(b,e)&&!a.isDark(b,e+1)&&a.isDark(b,e+2)&&a.isDark(b,e+3)&&a.isDark(b,e+4)&&!a.isDark(b,e+5)&&a.isDark(b,e+6)&&(d+=40);for(e=0;e<g;e++)for(b=0;b<g-6;b++)a.isDark(b,e)&&!a.isDark(b+1,e)&&a.isDark(b+2,e)&&a.isDark(b+3,e)&&a.isDark(b+4,e)&&!a.isDark(b+5,e)&&a.isDark(b+6,e)&&(d+=40);for(e=c=0;e<g;e++)for(b=0;b<g;b++)a.isDark(b,e)&&c++;b=Math.abs(100*c/g/g-50)/5;return d+=10*b}};var u={EXP_TABLE:Array(256),LOG_TABLE:Array(256),glog:function(a){if(1>a)throw Error("glog("+a+")");return u.LOG_TABLE[a]},gexp:function(a){for(;0>a;)a+=255;for(;256<=a;)a-=255;return u.EXP_TABLE[a]}};for(var g=0;8>g;g++)u.EXP_TABLE[g]=1<<g;for(g=8;256>g;g++)u.EXP_TABLE[g]=u.EXP_TABLE[g-4]^u.EXP_TABLE[g-5]^u.EXP_TABLE[g-6]^u.EXP_TABLE[g-8];for(g=0;255>g;g++)u.LOG_TABLE[u.EXP_TABLE[g]]=g;q.prototype={multiply:function(a){for(var g=Array(this.num.length+a.num.length-1),d=0;d<this.num.length;d++)for(var b=0;b<a.length;b++)g[d+b]^=u.gexp(u.glog(this.num[d])+u.glog(a.num[b]));return new q(g,0)}};var m=function(a,g){this.totalCount=a;this.dataCount=g};m.RS_BLOCK_TABLE=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]];m.getRSBlocks=function(a,g){var d=void 0;switch(g){case 1:d=[new m(26,19)];break;case 0:d=[new m(26,16)];break;case 3:d=[new m(26,13)];break;case 2:d=[new m(26,9)];break;default:d=void 0}return d};var l=function(){this.buffer=[];this.length=0};l.prototype={get:function(a){return 1==((this.buffer[Math.floor(a/8)]>>>(7-a%8))&1)},put:function(a,g){for(var d=0;d<g;d++)this.putBit(1==((a>>>(g-d-1))&1))},getLengthInBits:function(){return this.length},putBit:function(a){var g=Math.floor(this.length/8);this.buffer.length<=g&&this.buffer.push(0);a&&(this.buffer[g]|=128>>>(this.length%8));this.length++}};return{generate:function(a){var g=new k(5,0);g.addData(a);g.make();return g.createSvg(4)}}}();
-  </script>
+  <div class="modal-overlay" id="toast-popup" style="display:none; background:rgba(0,0,0,0.4); z-index:2000;">
+    <div class="toast-card">
+      <div class="toast-icon" id="toast-icon-area">🍵</div>
+      <div class="toast-title" id="toast-title-area">タイトル</div>
+      <div class="toast-body" id="toast-msg-area">メッセージ内容</div>
+    </div>
+  </div>
 
   <script>
-    var MiniQR=function(){
-      function k(a,g){this.typeNumber=a;this.errorCorrectLevel=g;this.modules=null;this.moduleCount=0;this.dataCache=null;this.dataList=[]}
-      function q(a,g){if(void 0==a.length)throw Error(a.length+"/"+g);for(var d=0;d<a.length&&0==a[d];)d++;this.num=Array(a.length-d+g);for(var b=0;b<a.length-d;b++)this.num[b]=a[b+d]}
-      function p(a,g){this.toNum=a;this.toAlpha=g}
-      k.prototype={
-        addData:function(a){this.dataList.push(new p(a))},
-        isDark:function(a,g){if(0>a||this.moduleCount<=a||0>g||this.moduleCount<=g)throw Error(a+","+g);return this.modules[a][g]},
-        getModuleCount:function(){return this.moduleCount},
-        make:function(){this.makeImpl(!1,this.getBestMaskPattern())},
-        makeImpl:function(a,g){this.moduleCount=4*this.typeNumber+17;this.modules=Array(this.moduleCount);for(var d=0;d<this.moduleCount;d++){this.modules[d]=Array(this.moduleCount);for(var b=0;b<this.moduleCount;b++)this.modules[d][b]=null}this.setupPositionProbePattern(0,0);this.setupPositionProbePattern(this.moduleCount-7,0);this.setupPositionProbePattern(0,this.moduleCount-7);this.setupPositionAdjustPattern();this.setupTimingPattern();this.setupTypeInfo(a,g);7<=this.typeNumber&&this.setupTypeNumber(a);null==this.dataCache&&(this.dataCache=k.createData(this.typeNumber,this.errorCorrectLevel,this.dataList));this.mapData(this.dataCache,g)},
-        setupPositionProbePattern:function(a,g){for(var d=-1;7>=d;d++)if(!(-1>a+d||this.moduleCount<=a+d))for(var b=-1;7>=b;b++)-1>g+b||this.moduleCount<=g+b||(this.modules[a+d][g+b]=0<=d&&6>=d&&(0==d||6==d)||0<=b&&6>=b&&(0==b||6==b)||2<=d&&4>=d&&2<=b&&4>=b?!0:!1)},
-        getBestMaskPattern:function(){for(var a=0,g=0,d=0;8>d;d++){this.makeImpl(!0,d);var b=f.getLostPoint(this);if(0==d||a>b)a=b,g=d}return g},
-        setupTimingPattern:function(){for(var a=8;this.moduleCount-8>a;a++)null==this.modules[a][6]&&(this.modules[a][6]=0==a%2);for(var g=8;this.moduleCount-8>g;g++)null==this.modules[6][g]&&(this.modules[6][g]=0==g%2)},
-        setupPositionAdjustPattern:function(){for(var a=f.getPatternPosition(this.typeNumber),g=0;g<a.length;g++)for(var d=0;d<a.length;d++){var b=a[g],e=a[d];if(null==this.modules[b][e])for(var c=-2;2>=c;c++)for(var h=-2;2>=h;h++)this.modules[b+c][e+h]=-2==c||2==c||-2==h||2==h||0==c&&0==h?!0:!1}},
-        setupTypeNumber:function(a){for(var g=f.getBCHTypeNumber(this.typeNumber),d=0;18>d;d++){var b=!a&&1==((g>>d)&1);this.modules[Math.floor(d/3)][d%3+this.moduleCount-8-3]=b}for(d=0;18>d;d++)b=!a&&1==((g>>d)&1),this.modules[d%3+this.moduleCount-8-3][Math.floor(d/3)]=b},
-        setupTypeInfo:function(a,g){for(var d=(this.errorCorrectLevel<<3)|g,b=f.getBCHTypeInfo(d),e=0;15>e;e++){var c=!a&&1==((b>>e)&1);10>e?this.modules[e][8]=c:6>e?this.modules[10-e-1][8]=c:this.modules[this.moduleCount-15+e][8]=c}for(e=0;15>e;e++)c=!a&&1==((b>>e)&1),8>e?this.modules[8][this.moduleCount-e-1]=c:9>e?this.modules[8][15-e-1+1]=c:this.modules[8][15-e-1]=c;this.modules[this.moduleCount-8][8]=!a},
-        mapData:function(a,g){for(var d=-1,b=this.moduleCount-1,e=7,c=0,h=this.moduleCount-1;0<h;h-=2)for(6==h&&h--;;){for(var f=0;2>f;f++)if(null==this.modules[b][h-f]){var k=!1;c<a.length&&(k=1==((a[c]>>>e)&1));var p=this;var m=void 0;switch(g){case 0:m=0==(b+h-f)%2;break;case 1:m=0==b%2;break;case 2:m=0==(h-f)%3;break;case 3:m=0==(b+h-f)%3;break;case 4:m=0==(Math.floor(b/2)+Math.floor((h-f)/3))%2;break;case 5:m=0==(b*(h-f))%2+0==(b*(h-f))%3;break;case 6:m=0==((b*(h-f))%2+0==(b*(h-f))%3)%2;break;case 7:m=0==((b+h-f)%2+0==(b*(h-f))%3)%2;default:m=!1}m&&(k=!k);this.modules[b][h-f]=k;e--;-1==e&&(c++,e=7)}b+=d;if(0>b||this.moduleCount<=b){b-=d;d=-d;break}}}},
-        createSvg:function(a){a=a||2;var g=this.getModuleCount()*a,d="";d+='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+g+" "+g+'" width="100%" height="100%">';d+='<rect width="100%" height="100%" fill="#ffffff"/>';for(var b=0;b<this.getModuleCount();b++)for(var e=0;e<this.getModuleCount();e++)this.isDark(b,e)&&(d+='<rect x="'+e*a+'" y="'+b*a+'" width="'+a+'" height="'+a+'" fill="#000000"/>');return d+="</svg>"}
-      };
-      k.createData=function(a,g,d){g=m.getRSBlocks(a,g);for(var b=new l,e=0;e<d.length;e++){var c=d[e];b.put(4,4);b.put(c.toNum.length,f.getLengthInBits(a));for(var h=0;h<c.toNum.length;h++)b.put(c.toNum.charCodeAt(h),8)}for(e=a=0;e<g.length;e++)a+=g[e].dataCount;if(b.getLengthInBits()>8*a)throw Error("overflow");for(b.getLengthInBits()+4<=8*a&&b.put(0,4);0!=b.getLengthInBits()%8;)b.putBit(!1);for(;!(b.getLengthInBits()>=8*a);){b.put(236,8);if(b.getLengthInBits()>=8*a)break;b.put(17,8)}return k.createBytes(b,g)};
-      k.createBytes=function(a,g){for(var d=0,b=0,e=0,c=Array(g.length),h=Array(g.length),f=0;f<g.length;f++){var k=g[f].dataCount,p=g[f].totalCount-k;b=Math.max(b,k);e=Math.max(e,p);c[f]=Array(k);for(var m=0;m<c[f].length;m++)c[f][m]=255&a.buffer[m+d];d+=k;var l=f,r=void 0;r=void 0;var n=new q(c[l],p),w=new q(Array(p+1),0);w.num[0]=1;for(var t=0;t<p;t++){var x=w,y=void 0,A=void 0;A=u.gexp(u.glog(1)+t);y=new q([1,A],0);x=x.multiply(y);w=x}l=n.num.length;r=w.num.length;n=new q(n.num,r-1);for(t=0;0<=n.num.length-r;){var y=n.num[0],A=u.gexp(u.glog(y)-w.num[0]),B=Array(n.num.length);for(m=0;m<n.num.length;m++)B[m]=n.num[m];for(m=0;m<r;m++)B[m]^=u.gexp(u.glog(w.num[m])+A);y=new q(B,0);n=y}r=Array(p);for(m=0;m<p;m++)t=m+n.num.length-p,r[m]=0<=t?n.num[t]:0;h[f]=r}for(m=f=0;f<g.length;f++)m+=g[f].totalCount;d=Array(m);b=0;for(m=0;m<b;m++)for(f=0;f<g.length;f++)m<c[f].length&&(d[b++]=c[f][m]);for(m=0;m<e;m++)for(f=0;f<g.length;f++)m<h[f].length&&(d[b++]=h[f][m]);return d};
-      p.prototype={getLength:function(){return this.toNum.length}};
-      var f={PATTERN_POSITION_TABLE:[[],[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,30,56,82,106],[6,30,58,86,110],[6,34,62,90,114],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],G15:1335,G18:7973,G15_MASK:21522,getBCHTypeInfo:function(a){for(var g=a<<10;0<=f.getMSB(g)-f.getMSB(f.G15);)g^=f.G15<<(f.getMSB(g)-f.getMSB(f.G15));return((a<<10)|g)^f.G15_MASK},getBCHTypeNumber:function(a){for(var g=a<<12;0<=f.getMSB(g)-f.getMSB(f.G18);)g^=f.G18<<(f.getMSB(g)-f.getMSB(f.G18));return(a<<12)|g},getMSB:function(a){for(var g=0;0!=a;)g++,a>>>=1;return g},getPatternPosition:function(a){return f.PATTERN_POSITION_TABLE[a-1]},getLengthInBits:function(a){if(1<=a&&10>a)return 8;if(27>a)return 16;if(41>a)return 16;throw Error("type:"+a);},getLostPoint:function(a){for(var g=a.getModuleCount(),d=0,b=0;b<g;b++)for(var e=0;e<g;e++){for(var c=0,h=a.isDark(b,e),k=-1;1>=k;k++)if(!(0>b+k||g<=b+k))for(var p=-1;1>=p;p++)0>e+p||g<=e+p||0==k&&0==p||h==a.isDark(b+k,e+p)&&c++;5<c&&(d+=3+c-5)}for(b=0;b<g-1;b++)for(e=0;e<g-1;e++)c=0,a.isDark(b,e)&&c++,a.isDark(b+1,e)&&c++,a.isDark(b,e+1)&&c++,a.isDark(b+1,e+1)&&c++,0!=c&&4!=c||(d+=3);for(b=0;b<g;b++)for(e=0;e<g-6;e++)a.isDark(b,e)&&!a.isDark(b,e+1)&&a.isDark(b,e+2)&&a.isDark(b,e+3)&&a.isDark(b,e+4)&&!a.isDark(b,e+5)&&a.isDark(b,e+6)&&(d+=40);for(e=0;e<g;e++)for(b=0;b<g-6;b++)a.isDark(b,e)&&!a.isDark(b+1,e)&&a.isDark(b+2,e)&&a.isDark(b+3,e)&&a.isDark(b+4,e)&&!a.isDark(b+5,e)&&a.isDark(b+6,e)&&(d+=40);for(e=c=0;e<g;e++)for(b=0;b<g;b++)a.isDark(b,e)&&c++;b=Math.abs(100*c/g/g-50)/5;return d+=10*b}};var u={EXP_TABLE:Array(256),LOG_TABLE:Array(256),glog:function(a){if(1>a)throw Error("glog("+a+")");return u.LOG_TABLE[a]},gexp:function(a){for(;0>a;)a+=255;for(;256<=a;)a-=255;return u.EXP_TABLE[a]}};for(var g=0;8>g;g++)u.EXP_TABLE[g]=1<<g;for(g=8;256>g;g++)u.EXP_TABLE[g]=u.EXP_TABLE[g-4]^u.EXP_TABLE[g-5]^u.EXP_TABLE[g-6]^u.EXP_TABLE[g-8];for(g=0;255>g;g++)u.LOG_TABLE[u.EXP_TABLE[g]]=g;q.prototype={multiply:function(a){for(var g=Array(this.num.length+a.num.length-1),d=0;d<this.num.length;d++)for(var b=0;b<a.length;b++)g[d+b]^=u.gexp(u.glog(this.num[d])+u.glog(a.num[b]));return new q(g,0)}};var m=function(a,g){this.totalCount=a;this.dataCount=g};m.RS_BLOCK_TABLE=[[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]];
-      m.getRSBlocks=function(a,g){
-        switch(g){
-          case 1: return [new m(26,19), new m(26,19), new m(26,19), new m(30,24), new m(32,24), new m(32,24), new m(34,26), new m(34,26), new m(36,28), new m(40,32), new m(40,32), new m(42,34), new m(44,36), new m(46,38), new m(46,38), new m(48,40)][a-1] ? [window.m_block || new m(100,80)] : [new m(130,96)];
-          case 0: return [new m(26,16)];
-          case 3: return [new m(26,13)];
-          case 2: return [new m(26,9)];
-          default: return void 0;
-        }
-      };
-      
-      // 文字列長から最適なバージョン(型番)を算出して強固に生成するラッパー
-      return {
-        generate: function(text) {
-          let typeNum = 4;
-          const len = text.length;
-          if (len > 120) typeNum = 14;
-          else if (len > 90) typeNum = 11;
-          else if (len > 60) typeNum = 8;
-          else if (len > 30) typeNum = 6;
-          
-          // 大容量対応用のRSブロック動的エミュレート
-          m.getRSBlocks = function(b, c) {
-            let total = 16 + (b * 12);
-            let data = Math.floor(total * 0.75);
-            return [new m(total, data)];
-          };
-          
-          var qrObj = new k(typeNum, 1); // 復元レベルL(1)で容量確保
-          qrObj.addData(text);
-          qrObj.make();
-          return qrObj.createSvg(4);
-        }
-      };
-    }();
-  </script>
-
-  <script>
-    const QRGenerator = (function() {
-      // 最小限のビットストリーム実装
-      function BitBuffer() { this.buffer = []; this.length = 0; }
-      BitBuffer.prototype = {
-        put: function(num, length) { for (let i = 0; i < length; i++) { this.putBit(((num >>> (length - i - 1)) & 1) === 1); } },
-        putBit: function(bit) { const bufIndex = Math.floor(this.length / 8); if (this.buffer.length <= bufIndex) { this.buffer.push(0); } if (bit) { this.buffer[bufIndex] |= (0x80 >>> (this.length % 8)); } this.length++; }
-      };
-
-      // リード・ソロモン符号化および多項式演算の最小セット
-      const GF256 = {
-        exp: new Array(256), log: new Array(256),
-        init: function() {
-          let x = 1;
-          for (let i = 0; i < 255; i++) { GF256.exp[i] = x; GF256.log[x] = i; x <<= 1; if (x & 0x100) { x ^= 0x11D; } }
-          for (let i = 255; i < 510; i++) { GF256.exp[i] = GF256.exp[i - 255]; }
-        },
-        modGx: function(data, ecLen) {
-          const rsPoly = new Array(ecLen + 1); rsPoly[0] = 1; let x = 1;
-          for (let i = 0; i < ecLen; i++) {
-            rsPoly[i + 1] = 0;
-            for (let j = i; j >= 0; j--) { rsPoly[j + 1] ^= GF256.exp[(GF256.log[rsPoly[j]] + GF256.log[x]) % 255]; }
-            x = (x << 1) ^ (x & 0x80 ? 0x11D : 0);
-          }
-          const ec = new Array(ecLen).fill(0);
-          for (let i = 0; i < data.length; i++) {
-            const factor = GF256.log[data[i] ^ ec[0]];
-            for (let j = 0; j < ecLen - 1; j++) { ec[j] = ec[j + 1] ^ (factor >= 0 ? GF256.exp[(GF256.log[rsPoly[j + 1]] + factor) % 255] : 0); }
-            ec[ecLen - 1] = (factor >= 0 ? GF256.exp[(GF256.log[rsPoly[ecLen]] + factor) % 255] : 0);
-          }
-          return ec;
-        }
-      };
-      GF256.init();
-
-      return {
-        // GASの長いURLを判定して安全なSVGを構築するメイン関数
-        generate: function(text) {
-          const utf8 = unescape(encodeURIComponent(text));
-          // 長さに応じてバージョンを自動決定（GASのURL向けに上限を拡張）
-          let ver = 14; 
-          if (utf8.length > 350) ver = 26;
-          if (utf8.length > 700) ver = 40;
-          
-          const dcCount = Math.floor((16 + ver * 12) * 0.75);
-          const ecCount = (16 + ver * 12) - dcCount;
-
-          const bb = new BitBuffer();
-          bb.put(4, 4); // 8ビットバイトモード固定
-          bb.put(utf8.length, ver < 10 ? 8 : 16);
-          for (let i = 0; i < utf8.length; i++) { bb.put(utf8.charCodeAt(i), 8); }
-
-          // パディング処理
-          const totalBits = dcCount * 8;
-          if (bb.length + 4 <= totalBits) bb.put(0, 4);
-          while (bb.length % 8 !== 0) bb.putBit(false);
-          
-          const padPatterns = [0xEC, 0x11];
-          let pIdx = 0;
-          while (bb.length < totalBits) { bb.put(padPatterns[pIdx], 8); pIdx = 1 - pIdx; }
-
-          // エラー訂正バイトの生成
-          const ecBytes = GF256.modGx(bb.buffer.slice(0, dcCount), ecCount);
-          const finalData = bb.buffer.slice(0, dcCount).concat(ecBytes);
-
-          // 簡易マトリクス展開用の描画スケール
-          const modCnt = 4 * ver + 17;
-          const modules = Array.from({ length: modCnt }, () => new Array(modCnt).fill(0));
-
-          // 位置決めパターンのマッピング (左上、右上、左下)
-          const setFinder = (ox, oy) => {
-            for (let y = -1; y <= 7; y++) {
-              for (let x = -1; x <= 7; x++) {
-                if (ox+x < 0 || ox+x >= modCnt || oy+y < 0 || oy+y >= modCnt) continue;
-                const isDark = (0 <= x && x <= 6 && (y === 0 || y === 6)) || (0 <= y && y <= 6 && (x === 0 || x === 6)) || (2 <= x && x <= 4 && 2 <= y && y <= 4);
-                modules[oy+y][ox+x] = isDark ? 1 : 2;
-              }
-            }
-          };
-          setFinder(0, 0); setFinder(modCnt - 7, 0); setFinder(0, modCnt - 7);
-
-          // データビットの配置とインターリーブエミュレーション
-          let dIdx = 0, bitShift = 7;
-          for (let col = modCnt - 1; col > 0; col -= 2) {
-            if (col === 6) col--;
-            for (let row = 0; row < modCnt; row++) {
-              for (let c = 0; c < 2; c++) {
-                const x = col - c;
-                if (modules[row][x] === 0) {
-                  let dark = false;
-                  if (dIdx < finalData.length) { dark = ((finalData[dIdx] >>> bitShift) & 1) === 1; }
-                  // 基本マスクパターン（(x+y)%2==0）を適用
-                  if ((x + row) % 2 === 0) dark = !dark;
-                  modules[row][x] = dark ? 1 : 2;
-                  bitShift--; if (bitShift < 0) { bitShift = 7; dIdx++; }
-                }
-              }
-            }
-          }
-
-          // SVG文字列の生成（高解像度・軽量）
-          const size = modCnt * 4;
-          let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="100%" height="100%">`;
-          svg += `<rect width="100%" height="100%" fill="#ffffff"/>`;
-          for (let r = 0; r < modCnt; r++) {
-            for (let c = 0; c < modCnt; c++) {
-              if (modules[r][c] === 1) { svg += `<rect x="${c*4}" y="${r*4}" width="4" height="4" fill="#000000"/>`; }
-            }
-          }
-          return svg + `</svg>`;
-        }
-      };
-    })();
-  </script>
-
- <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzvd7how1B-d5vKnCtPKSxqSpwyx-pZsHwOv6tm1YFHOt-HTuhXnaMrnoTJ6Wrx75nv9w/exec";
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -454,36 +507,30 @@
       setupSwipeEvents();
     };
 
-    // 世界標準ライブラリを用いて安全・確実にローカルでQRコードを描画する
     function openGlobalPhoneLinkModal() {
       const modal = document.getElementById('phone-link-modal');
       const canvas = document.getElementById('modal-qr-canvas');
       
       if (!canvas) return;
-      
-      // 一度中身を完全にクリアする
       canvas.innerHTML = '';
 
-      // 連携させたい現在のURLを取得
       const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}`;
       
       try {
-        // qrcode.jsライブラリを実行（GASの長文URLに自動最適化されます）
         new QRCode(canvas, {
           text: targetUrl,
-          width: 240,
-          height: 240,
+          width: 200,
+          height: 200,
           colorDark : "#000000",
           colorLight : "#ffffff",
-          correctLevel : QRCode.CorrectLevel.M // 読み取りやすさと密度のバランスが良い中位レベル
+          correctLevel : QRCode.CorrectLevel.M
         });
 
-        // 描画された画像がモーダル内で中央に寄るようにスタイルを微調整
         const qrImg = canvas.querySelector('img');
         if (qrImg) {
           qrImg.style.margin = "0 auto";
           qrImg.style.display = "block";
-          qrImg.style.maxWidth = "100%";
+          qrImg.style.width = "100%";
           qrImg.style.height = "auto";
         }
 
