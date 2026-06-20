@@ -161,8 +161,9 @@
     }
     .menu-img {
       width: 90px;
-      height: 90px;
-      object-fit: cover;
+      height: auto;
+      aspect-ratio: 4 / 3; /* 画像比率を4:3に固定 */
+      object-fit: cover;    /* 枠内に綺麗に収める設定 */
       border-radius: 6px;
       margin-right: 12px;
       background: #eee;
@@ -390,7 +391,7 @@
       <div class="modal-header">
         <div class="modal-title">ご来店ありがとうございます</div>
       </div>
-      <p style="text-align:left; margin-bottom:10px;">ご利用人数を選択してください。</p>
+      <p style="text-align:left; margin-bottom:10px;">ご利用人数を選択してください。<br><span style="color:#d32f2f; font-size:0.8rem;">※席料・お通し代（三品）として、お一人様1,000円頂戴いたします。</span></p>
       <select class="guest-select" id="modal-guest-count">
         <option value="1">1 名様</option>
         <option value="2">2 名様</option>
@@ -432,6 +433,7 @@
 
   <div class="modal-overlay" id="option-modal" style="display:none;">
     <div class="modal-content">
+      <div class="modal-content">
       <div class="modal-header">
         <div class="option-title">商品の選択</div>
         <div class="close-x" onclick="closeModal('option-modal')">&times;</div>
