@@ -764,12 +764,10 @@
           const itemQty = Number(item.quantity) || 0;
           const currentStatus = String(item.status).trim();
 
-          // ★ステータス判定の修正：取消・キャンセル時は合計金額に加算しないルールを徹底
           let statusLabel = '';
           if (currentStatus === '取消' || currentStatus === 'キャンセル') {
             statusLabel = '<span style="color: #d32f2f; font-weight: bold; background: #ffebee; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">キャンセル</span>';
           } else {
-            // 取消以外（調理中・提供済）のみ合計金額を計算
             cumulativeTotal += (parsedPrice > 0) ? parsedPrice * itemQty : fallbackUnitPrice * itemQty;
             
             if (currentStatus === '提供済' || currentStatus === '提供済み') {
@@ -788,59 +786,35 @@
       } catch (e) { container.innerHTML = '<p style="text-align:center; color:red; padding:15px 0;">履歴取得失敗。</p>'; }
     }
 
-    async function checkout(tableId, total) {
-  if (!confirm(`【${tableId}卓】の会計を確定し、売上を確定させますか？\n合計金額: ${total}円`)) return;
-
-  const btn = document.querySelector(`button[onclick*="checkout('${tableId}'"]`);
-  if (btn) {
-    btn.disabled = true;
-    btn.innerText = "処理中...";
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append('action', 'final_checkout'); // GAS側の会計クローズ処理を叩く
-    formData.append('tableId', tableId);
-
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      body: formData
-    });
-    const result = await response.json();
-
-    if (result.status === 'success') {
-      alert(`【${tableId}卓】の会計処理が完了しました。`);
+    // 会計要請の実行関数（重複を排除し一本化）
+    async function requestCheckout() {
+      if (!confirm("お会計を要請しますか？\n※これ以上の追加注文はできなくなります。")) return;
       
-      // 【重要】画面上の該当卓の表示カード（HTML要素）を即座に削除する
-      // ※カードのIDやクラス名がお使いのレジアプリの設計に合わせて調整してください
-      const card = document.getElementById(`table-card-${tableId}`) || btn.closest('.table-card');
-      if (card) {
-        card.remove();
-      }
-
-      // レジデータを再取得して画面を完全にクリーンにする
-      if (typeof loadCashierData === 'function') {
-        loadCashierData(); 
-      } else {
-        location.reload(); // 関数がない場合は強制リロードでスプレッドシートの最新状態を反映
-      }
-    } else {
-      alert("エラー: " + result.message);
-      if (btn) {
-        btn.disabled = false;
-        btn.innerText = "会計完了";
+      const btn = document.getElementById('checkout-action-btn'); 
+      btn.disabled = true; 
+      btn.innerText = "処理中...";
+      
+      try {
+        const postUrl = `${GAS_URL}?action=checkout&tableId=${encodeURIComponent(tableId)}`;
+        const response = await fetch(postUrl, { method: 'POST' });
+        const result = await response.json();
+        
+        if (result.status === 'success') { 
+          closeModal('history-modal'); 
+          // 画面全体を「お会計を要請しました」のロック画面に変更
+          document.getElementById('checkout-lock-overlay').style.display = 'flex';
+        } else { 
+          alert("会計処理エラー: " + result.message); 
+        }
+      } catch (err) { 
+        alert("通信に失敗しました。ネットワーク環境をご確認ください。"); 
+      } finally { 
+        btn.disabled = false; 
+        btn.innerText = "お会計に進む"; 
       }
     }
-  } catch (error) {
-    alert("通信に失敗しました。");
-    if (btn) {
-      btn.disabled = false;
-      btn.innerText = "会計完了";
-    }
-  }
-}
 
-    // 会計完了を定期監視する処理
+    // 会計完了を定期監視する処理（5秒ごと）
     setInterval(async function() {
       if (document.getElementById('checkout-lock-overlay').style.display !== 'flex') return;
       try {
@@ -848,12 +822,13 @@
         const data = await res.json();
         const activeOrders = (data.orders || []).filter(o => String(o.tableId).trim() === String(tableId).trim());
         
-        // 該当卓の未決済データ（調理中・提供済・会計要請）が完全になくなった場合
+        // 該当卓の未決済データ（調理中・提供済・会計要請）が完全になくなった場合（＝レジ側で会計完了）
         if (activeOrders.length === 0) {
           document.getElementById('checkout-lock-overlay').style.display = 'none';
           alert("お会計が完了しました。ご利用ありがとうございました！");
           state.cart = [];
           updateCartBadge();
+          // トップ画面（人数選択）へ強制リセットして戻す
           location.reload(); 
         }
       } catch (e) {
