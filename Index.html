@@ -355,6 +355,8 @@
     .toast-icon { font-size: 2.5rem; margin-bottom: 10px; }
     .toast-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 6px; }
     .toast-body { font-size: 0.9rem; color: #666; }
+    
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -490,6 +492,13 @@
     </div>
   </div>
 
+  <div id="checkout-lock-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; flex-direction:column; justify-content:center; align-items:center; color:#fff; text-align:center; padding:20px; box-sizing:border-box;">
+    <div style="font-size:4rem; margin-bottom:20px;">🚶‍♂️</div>
+    <h2 style="margin:0 0 10px 0; font-size:1.8rem; color:#4caf50;">お会計を要請しました</h2>
+    <p style="font-size:1.1rem; color:#ccc; margin:0 0 30px 0; line-height:1.6;">伝票をお持ちの上、レジカウンターへお進みください。<br>店員が会計処理を行うと、この画面は自動的に終了します。</p>
+    <div class="spinner" style="border:4px solid rgba(255,255,255,0.1); border-left-color:#4caf50; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite;"></div>
+  </div>
+
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzvd7how1B-d5vKnCtPKSxqSpwyx-pZsHwOv6tm1YFHOt-HTuhXnaMrnoTJ6Wrx75nv9w/exec";
 
@@ -582,7 +591,7 @@
       document.addEventListener('touchend', (e) => { if (isModalActive()) return; touchEndX = e.changedTouches[0].screenX; touchEndY = e.changedTouches[0].screenY; menuList.style.transform = ''; menuList.style.opacity = ''; handleSwipeGesture(); }, { passive: true });
     }
 
-    function isModalActive() { return ['customer-modal', 'cart-modal', 'history-modal', 'option-modal', 'phone-link-modal', 'wifi-prompt-modal', 'toast-popup'].some(id => { const el = document.getElementById(id); return el && el.style.display === 'flex'; }); }
+    function isModalActive() { return ['customer-modal', 'cart-modal', 'history-modal', 'option-modal', 'phone-link-modal', 'wifi-prompt-modal', 'toast-popup', 'checkout-lock-overlay'].some(id => { const el = document.getElementById(id); return el && el.style.display === 'flex'; }); }
     
     function handleSwipeGesture() {
       const deltaX = touchEndX - touchStartX; const deltaY = touchEndY - touchStartY;
@@ -786,10 +795,34 @@
         const postUrl = `${GAS_URL}?action=checkout&tableId=${encodeURIComponent(tableId)}`;
         const response = await fetch(postUrl, { method: 'POST' });
         const result = await response.json();
-        if (result.status === 'success') { showCustomToast(true, 'お会計の受付完了', 'レジカウンターまでお越しください。'); closeModal('history-modal'); }
+        if (result.status === 'success') { 
+          closeModal('history-modal'); 
+          document.getElementById('checkout-lock-overlay').style.display = 'flex';
+        }
         else { alert("会計処理エラー: " + result.message); }
       } catch (err) { alert("通信に失敗しました。"); } finally { btn.disabled = false; btn.innerText = "お会計に進む"; }
     }
+
+    // 会計完了を定期監視する処理
+    setInterval(async function() {
+      if (document.getElementById('checkout-lock-overlay').style.display !== 'flex') return;
+      try {
+        const res = await fetch(`${GAS_URL}?mode=kitchen&action=history`);
+        const data = await res.json();
+        const activeOrders = (data.orders || []).filter(o => String(o.tableId).trim() === String(tableId).trim());
+        
+        // 該当卓の未決済データ（調理中・提供済・会計要請）が完全になくなった場合
+        if (activeOrders.length === 0) {
+          document.getElementById('checkout-lock-overlay').style.display = 'none';
+          alert("お会計が完了しました。ご利用ありがとうございました！");
+          state.cart = [];
+          updateCartBadge();
+          location.reload(); 
+        }
+      } catch (e) {
+        console.error("決済完了監視エラー:", e);
+      }
+    }, 5000);
 
     function showCustomToast(isSuccess, title, message) {
       const overlay = document.getElementById('toast-popup'); const iconArea = document.getElementById('toast-icon-area');
