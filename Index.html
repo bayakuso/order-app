@@ -7,7 +7,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     /* ==========================================
-       レスポンシブ・マルチデバイス最適化（縦横切り替え対応）
+       レスポンシブ・マルチデバイス最適化（元のカードデザインで2列化）
        ========================================== */
     .modal-content {
       background: #fff;
@@ -58,11 +58,11 @@
       gap: 12px;
       padding: 10px 16px 80px 16px;
       transition: transform 0.2s ease-out, opacity 0.2s ease-out;
-      max-width: 1024px; /* 横画面時のために少し拡張 */
+      max-width: 1024px;
       margin: 0 auto;
     }
 
-    /* メニューカード：基本（スマホ・縦長）は横並び */
+    /* メニューカード：画像・並び順は元のスタイルを完全に維持 */
     .menu-card {
       display: flex;
       background: #fff;
@@ -85,25 +85,11 @@
       flex-shrink: 0;
     }
 
-    /* 【画面幅 600px 以上】タブレット縦・横向き時の2列グリッド最適化 */
+    /* 【画面幅 600px 以上】元のレイアウトのまま2列に並べる */
     @media (min-width: 600px) {
       #menu-list {
-        grid-template-columns: repeat(2, 1fr); /* 自動で2列化 */
+        grid-template-columns: repeat(2, 1fr); /* 2列化のみ実行 */
         gap: 16px;
-      }
-      .menu-card {
-        flex-direction: column; /* 上画像、下テキストの縦並びに変更 */
-        align-items: stretch;
-        padding: 12px;
-      }
-      .menu-img {
-        width: 100%;
-        height: 160px; /* 横画面で画像が巨大化するのを防ぐため高さを固定 */
-        margin-right: 0;
-        margin-bottom: 10px;
-      }
-      .menu-meta {
-        margin-top: 8px;
       }
     }
 
