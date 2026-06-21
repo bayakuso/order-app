@@ -742,7 +742,10 @@
         const currentTableOrders = (data.orders || []).filter(o => String(o.tableId).trim() === String(tableId).trim());
         container.innerHTML = '';
         if (currentTableOrders.length === 0) { container.innerHTML = '<p style="text-align:center; color:#888; padding:15px 0;">注文履歴はありません。</p>'; return; }
-        let cumulativeTotal = 0; checkoutBtn.style.display = 'block';
+        
+        let cumulativeTotal = 0; 
+        checkoutBtn.style.display = 'block';
+        
         currentTableOrders.reverse().forEach((item) => {
           const row = document.createElement('div'); row.className = 'cart-item-row';
           const cleanName = item.menuName.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '').trim();
@@ -750,13 +753,27 @@
           let fallbackUnitPrice = matchedMenu ? Number(matchedMenu.price) : 0;
           let parsedPrice = Number(item.price) || 0;
           const itemQty = Number(item.quantity) || 0;
-          cumulativeTotal += (parsedPrice > 0) ? parsedPrice * itemQty : fallbackUnitPrice * itemQty;
-          let statusLabel = (item.status === '提供済' || item.status === '提供済み') ? 
-            '<span style="color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">提供済</span>' :
-            '<span style="color: #ff9800; font-weight: bold; background: #fff3e0; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">調理中</span>';
+          const currentStatus = String(item.status).trim();
+
+          // ★ステータス判定の修正：取消・キャンセル時は合計金額に加算しないルールを徹底
+          let statusLabel = '';
+          if (currentStatus === '取消' || currentStatus === 'キャンセル') {
+            statusLabel = '<span style="color: #d32f2f; font-weight: bold; background: #ffebee; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">キャンセル</span>';
+          } else {
+            // 取消以外（調理中・提供済）のみ合計金額を計算
+            cumulativeTotal += (parsedPrice > 0) ? parsedPrice * itemQty : fallbackUnitPrice * itemQty;
+            
+            if (currentStatus === '提供済' || currentStatus === '提供済み') {
+              statusLabel = '<span style="color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">提供済</span>';
+            } else {
+              statusLabel = '<span style="color: #ff9800; font-weight: bold; background: #fff3e0; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">調理中</span>';
+            }
+          }
+
           row.innerHTML = `<div class="cart-item-info"><div class="cart-item-name">${cleanName}</div><div class="cart-item-price-label" style="margin-top:3px;">${statusLabel} <span style="color:#999; margin-left:5px;">${item.time}</span></div></div><div style="font-weight: bold; color: #333;">${itemQty} 点</div>`;
           container.appendChild(row);
         });
+        
         totalDisplay.innerText = `${cumulativeTotal.toLocaleString()} 円`;
         bannerArea.style.display = 'block';
       } catch (e) { container.innerHTML = '<p style="text-align:center; color:red; padding:15px 0;">履歴取得失敗。</p>'; }
