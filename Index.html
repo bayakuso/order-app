@@ -493,10 +493,10 @@
   </div>
 
   <div id="checkout-lock-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; flex-direction:column; justify-content:center; align-items:center; color:#fff; text-align:center; padding:20px; box-sizing:border-box;">
-    <div style="font-size:4rem; margin-bottom:20px;">🚶‍♂️</div>
-    <h2 style="margin:0 0 10px 0; font-size:1.8rem; color:#4caf50;">お会計を要請しました</h2>
-    <p style="font-size:1.1rem; color:#ccc; margin:0 0 30px 0; line-height:1.6;">伝票をお持ちの上、レジカウンターへお進みください。<br>店員が会計処理を行うと、この画面は自動的に終了します。</p>
-    <div class="spinner" style="border:4px solid rgba(255,255,255,0.1); border-left-color:#4caf50; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite;"></div>
+    <div id="lock-icon" style="font-size:4rem; margin-bottom:20px;">🚶‍♂️</div>
+    <h2 id="lock-title" style="margin:0 0 10px 0; font-size:1.8rem; color:#4caf50;">お会計を要請しました</h2>
+    <p id="lock-body" style="font-size:1.1rem; color:#ccc; margin:0 0 30px 0; line-height:1.6;">伝票をお持ちの上、レジカウンターへお進みください。<br>店員が会計処理を行うと、この画面は自動的に切り替わります。</p>
+    <div id="lock-spinner" class="spinner" style="border:4px solid rgba(255,255,255,0.1); border-left-color:#4caf50; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite;"></div>
   </div>
 
   <script>
@@ -504,9 +504,10 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const tableId = urlParams.get('table') || 'A';
-    const isViewer = urlParams.get('view') === 'true';
+    const isViewer = urlParams.get('view') === 'true'; // true=親機（卓上端末）, false=子機（連携スマホ）
 
     let lastCheckoutRowIndex = -1; 
+    let isAppDisabled = false; // 子機が使用不可状態になったかどうかのフラグ
 
     let state = { allMenus: [], categories: [], currentCategory: '', cart: [] };
     let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0, currentModalQty = 1;
@@ -518,8 +519,11 @@
       document.getElementById('display-table-id').innerText = tableId;
       if (isViewer) {
         document.getElementById('header-link-area').style.display = 'block';
+        document.getElementById('customer-modal').style.display = 'flex'; // 親機のみ人数選択表示
+      } else {
+        // 子機の場合は、親機がセットした時間や人数がURLにあれば上部バッジに反映
+        document.getElementById('header-link-area').style.display = 'none';
       }
-      document.getElementById('customer-modal').style.display = 'flex';
       updateHeaderStatusBadges();
       
       await initCheckoutIndex();
@@ -557,6 +561,7 @@
       if (!canvas) return;
       canvas.innerHTML = '';
 
+      // 子機用URL（view=trueを意図的に排除）
       const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}`;
       
       try {
@@ -730,7 +735,6 @@
       setTimeout(() => { listContainer.style.opacity = 1; }, 50);
     }
 
-    // 【14】メニューインライン数量およびオプション内数量の増減コントロール
     function inlineChangeQty(qtyId, amount) { const el = document.getElementById(qtyId); if (!el) return; let current = parseInt(el.innerText, 10) || 1; current += amount; if (current < 1) current = 1; if (current > 10) current = 10; el.innerText = current; }
     function changeModalQty(amount) { currentModalQty += amount; if (currentModalQty < 1) currentModalQty = 1; if (currentModalQty > 10) currentModalQty = 10; document.getElementById('modal-qty-val').innerText = currentModalQty; }
 
@@ -750,7 +754,7 @@
       modal.style.display = 'flex';
     }
 
-    // 【16】ローカルメモリへの配列追加実行
+    // 【16】カート追加処理
     function addToCart(menuId, qtyId) { const item = state.allMenus.find(m => m.menu_id == menuId); const qty = parseInt(document.getElementById(qtyId).innerText, 10) || 1; executeAddToCart(item, qty, null); document.getElementById(qtyId).innerText = 1; }
     function executeAddToCart(item, qty, optionText) {
       const finalName = optionText ? `${item.name} [${optionText}]` : item.name;
@@ -760,10 +764,9 @@
       updateCartBadge();
     }
 
-    // 【17】フッターの「カートを見る」ボタンの数値バッジの動的リフレッシュ
     function updateCartBadge() { const totalQty = state.cart.reduce((sum, c) => sum + c.quantity, 0); const badge = document.getElementById('cart-badge-count'); if (totalQty > 0) { badge.innerText = totalQty; badge.style.display = 'flex'; } else { badge.style.display = 'none'; } }
 
-    // 【18】現在の未送信注文一覧（カートモーダル）のオープン
+    // 【18】カートモーダル表示
     function openCartModal() {
       const container = document.getElementById('cart-list-items'); container.innerHTML = '';
       if (state.cart.length === 0) { container.innerHTML = '<p style="text-align:center;color:#999;padding:20px 0;">カートは空です。</p>'; document.getElementById('send-order-btn').disabled = true; }
@@ -778,7 +781,6 @@
       document.getElementById('cart-modal').style.display = 'flex';
     }
 
-    // 【19】カート商品の削除
     function removeFromCart(idx) { state.cart.splice(idx, 1); updateCartBadge(); openCartModal(); }
 
     // 【20】注文履歴モーダル表示
@@ -863,29 +865,60 @@
       }
     }
 
-    // 【22】レジアプリ側の会計クローズを自動感知する定期監視（アラートなし・自動リロード・view=true付与）
+    // 【22】親機・子機連動の会計監視処理（5秒周期）
     setInterval(async function() {
-      if (document.getElementById('checkout-lock-overlay').style.display !== 'flex') return;
+      if (isAppDisabled) return; // 既に使用不可状態なら何もしない
       
       try {
         const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
         const data = await res.json();
         
-        let activeOrders = (data.orders || []).filter(o => {
+        // 前回の「会計済」最終インデックスより後の、この組のすべての注文
+        const currentOrders = (data.orders || []).filter(o => {
           return String(o.tableId).trim() === String(tableId).trim() && 
-                 parseInt(o.rowIndex, 10) > lastCheckoutRowIndex &&
-                 (o.status === "会計要請" || o.status === "調理中" || o.status === "提供済" || o.status === "提供済み");
+                 parseInt(o.rowIndex, 10) > lastCheckoutRowIndex;
+        });
+
+        // 「会計要請」状態の注文が1つでもあるかチェック
+        const hasCheckoutRequested = currentOrders.some(o => o.status === "会計要請");
+
+        // 【同期処理A】いずれかの端末で会計要請が出たら、全端末をロック画面へ強制移行
+        if (hasCheckoutRequested) {
+          if (document.getElementById('checkout-lock-overlay').style.display !== 'flex') {
+            // 他のモーダルが開いていたら閉じる
+            ['cart-modal', 'history-modal', 'option-modal'].forEach(id => closeModal(id));
+            document.getElementById('checkout-lock-overlay').style.display = 'flex';
+          }
+          return; // 会計要請中の場合はここで処理を抜ける
+        }
+
+        // 調理中・提供済・会計要請のアクティブな注文を抽出
+        let activeOrders = currentOrders.filter(o => {
+          return o.status === "会計要請" || o.status === "調理中" || o.status === "提供済" || o.status === "提供済み";
         });
         
-        // 会計処理が完了（アクティブな注文がゼロ）した場合の処理
-        if (activeOrders.length === 0) {
-          document.getElementById('checkout-lock-overlay').style.display = 'none';
+        // 【同期処理B】アクティブ注文がゼロ、かつ過去に注文が1つ以上存在していた場合＝レジで「会計済」にクローズされたと判定
+        if (currentOrders.length > 0 && activeOrders.length === 0) {
           state.cart = [];
           updateCartBadge();
-          
-          // メッセージ表示を行わず、view=trueを持たせてリダイレクト（人数選択モーダルが自動で開きます）
-          const baseUrl = window.location.origin + window.location.pathname + `?table=${encodeURIComponent(tableId)}&view=true`;
-          window.location.href = baseUrl;
+
+          if (isViewer) {
+            // ─── 親機（卓上端末）の挙動 ───
+            document.getElementById('checkout-lock-overlay').style.display = 'none';
+            // 人数選択を促すため、初期状態（view=true）で画面をリダイレクト
+            const baseUrl = window.location.origin + window.location.pathname + `?table=${encodeURIComponent(tableId)}&view=true`;
+            window.location.href = baseUrl;
+          } else {
+            // ─── 子機（スマホ連携端末）の挙動 ───
+            isAppDisabled = true;
+            // 画面ロック表示を「使用不可（終了）」のデザインへ書き換え、永続ロック
+            document.getElementById('checkout-lock-overlay').style.display = 'flex';
+            document.getElementById('lock-icon').innerText = "🛑";
+            document.getElementById('lock-title').innerText = "ご利用ありがとうございました";
+            document.getElementById('lock-title').style.color = "#d32f2f";
+            document.getElementById('lock-body').innerHTML = "お会計が完了したため、この画面は終了しました。<br>再度ご注文される場合は、卓上端末のQRコードをもう一度読み取ってください。";
+            document.getElementById('lock-spinner').style.display = "none"; // スピナーを非表示に
+          }
         }
       } catch (e) {
         console.error("決済完了監視エラー:", e);
@@ -913,7 +946,6 @@
       } catch (err) { showCustomToast(false, '通信失敗', 'ネットワーク環境をご確認ください。'); btn.disabled = false; btn.innerText = "注文を確定する"; }
     }
 
-    // 【25】モーダルの非表示化
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
   </script>
 </body>
