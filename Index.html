@@ -816,20 +816,31 @@
 
     // 会計完了を定期監視する処理（5秒ごと）
     setInterval(async function() {
+      // 会計ロック画面（オーバーレイ）が表示されていない場合は何もしない
       if (document.getElementById('checkout-lock-overlay').style.display !== 'flex') return;
+      
       try {
+        // 客席履歴用のaction=historyを叩いて最新データをチェック
         const res = await fetch(`${GAS_URL}?mode=kitchen&action=history`);
         const data = await res.json();
-        const activeOrders = (data.orders || []).filter(o => String(o.tableId).trim() === String(tableId).trim());
         
-        // 該当卓の未決済データ（調理中・提供済・会計要請）が完全になくなった場合（＝レジ側で会計完了）
+        // 【重要】該当卓のデータのうち、ステータスが「会計要請」「調理中」「提供済」のものが残っているか探す
+        const activeOrders = (data.orders || []).filter(o => {
+          return String(o.tableId).trim() === String(tableId).trim() && 
+                 (o.status === "会計要請" || o.status === "調理中" || o.status === "提供済" || o.status === "提供済み");
+        });
+        
+        // 決済対象のデータが完全になくなった場合（＝レジ側で「会計済」にクローズされた）
         if (activeOrders.length === 0) {
           document.getElementById('checkout-lock-overlay').style.display = 'none';
           alert("お会計が完了しました。ご利用ありがとうございました！");
           state.cart = [];
           updateCartBadge();
-          // トップ画面（人数選択）へ強制リセットして戻す
-          location.reload(); 
+          
+          // 次のお客様のために、トップの人数選択画面へ戻す（強制リロード）
+          // URLパラメータの既存の人数(num)や時間(time)をクリアして真っ新な状態にする
+          const baseUrl = window.location.origin + window.location.pathname + `?table=${encodeURIComponent(tableId)}`;
+          window.location.href = baseUrl;
         }
       } catch (e) {
         console.error("決済完了監視エラー:", e);
