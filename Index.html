@@ -506,23 +506,51 @@
     const tableId = urlParams.get('table') || 'A';
     const isViewer = urlParams.get('view') === 'true';
 
+    // ─── 【重要】新規来店時に過去の最終行インデックスを特定するための変数 ───
+    let lastCheckoutRowIndex = -1; 
+
     let state = { allMenus: [], categories: [], currentCategory: '', cart: [] };
     let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0, currentModalQty = 1;
 
     const NO_IMAGE_SVG = "data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22 viewBox=%220 0 400 300%22><rect width=%22400%22 height=%22300%22 fill=%22%23e0e0e0%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23888888%22 font-family=%22sans-serif%22 font-size=%2224%22 font-weight=%22bold%22>No Image</text></svg>";
 
     // 【1】初期化処理（画面ロード時の発火）
-    window.onload = () => {
+    window.onload = async () => {
       document.getElementById('display-table-id').innerText = tableId;
       if (isViewer) {
         document.getElementById('header-link-area').style.display = 'block';
       }
       document.getElementById('customer-modal').style.display = 'flex';
       updateHeaderStatusBadges();
+      
+      // ─── 【追加】入店時に、現在のスプレッドシート上の「前回の会計済最終位置」を特定・初期化する ───
+      await initCheckoutIndex();
+
       fetchMenus();
       updateCartBadge();
       setupSwipeEvents();
     };
+
+    // ─── 【新規追加】前回の最終会計クローズ行インデックスをAPI経由で取得・同期する内部処理 ───
+    async function initCheckoutIndex() {
+      try {
+        const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
+        const data = await res.json();
+        const orders = data.orders || [];
+        // スプレッドシート全体の該当卓データから「会計済」の最大rowIndexを探す
+        orders.forEach(o => {
+          if (String(o.tableId).trim() === String(tableId).trim() && o.status === "会計済") {
+            const idx = parseInt(o.rowIndex, 10);
+            if (idx > lastCheckoutRowIndex) {
+              lastCheckoutRowIndex = idx;
+            }
+          }
+        });
+        console.log("同期された前回の最終決済クローズ行番号:", lastCheckoutRowIndex);
+      } catch(e) {
+        console.error("決済初期位置の同期に失敗しました:", e);
+      }
+    }
 
     // 【2】スマホ連携用のQRコード生成モーダル表示
     function openGlobalPhoneLinkModal() {
@@ -756,7 +784,7 @@
     // 【19】カートに入っている商品のインデックス指定部分削除
     function removeFromCart(idx) { state.cart.splice(idx, 1); updateCartBadge(); openCartModal(); }
 
-    // 【20】注文履歴モーダル表示（入店時刻による過去ログ強制遮断フィルター搭載）
+    // 【20】注文履歴モーダル表示（IDインデックス連番による過去ログ強制遮断フィルター搭載）
     async function openHistoryModal() {
       const container = document.getElementById('history-list-items');
       const bannerArea = document.getElementById('history-total-banner-area');
@@ -769,19 +797,12 @@
         const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
         const data = await res.json();
         
-        // ─── 入店時刻フィルタリング用変数取得 ───
-        const checkInTime = urlParams.get('time'); 
-
-        // 該当卓の注文データのみに絞り込み
-        let currentTableOrders = (data.orders || []).filter(o => String(o.tableId).trim() === String(tableId).trim());
-        
-        // 【重要】入店パラメータ（time）が存在する場合、それより古い時間の注文（過去のキャンセルなど）はすべて画面から排除する
-        if (checkInTime) {
-          currentTableOrders = currentTableOrders.filter(o => {
-            return o.time >= checkInTime;
-          });
-        }
-        // ──────────────────────────────────────────
+        // ─── 【重要修正】前回の「会計済」最終インデックスより後ろ（新しい）データのみをこの組のデータとして認める ───
+        let currentTableOrders = (data.orders || []).filter(o => {
+          return String(o.tableId).trim() === String(tableId).trim() && 
+                 parseInt(o.rowIndex, 10) > lastCheckoutRowIndex;
+        });
+        // ───────────────────────────────────────────────────────────────────────────────────────
 
         container.innerHTML = '';
         if (currentTableOrders.length === 0) { container.innerHTML = '<p style="text-align:center; color:#888; padding:15px 0;">注文履歴はありません。</p>'; return; }
@@ -847,25 +868,20 @@
       }
     }
 
-    // 【22】レジアプリ側の会計クローズを自動感知する定期監視（5秒周期・入店時刻フィルター搭載）
+    // 【22】レジアプリ側の会計クローズを自動感知する定期監視（5秒周期・連番インデックスフィルター搭載）
     setInterval(async function() {
       if (document.getElementById('checkout-lock-overlay').style.display !== 'flex') return;
       
       try {
         const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
         const data = await res.json();
-        const checkInTime = urlParams.get('time');
         
-        // 該当卓のアクティブな注文（未決済データ）を抽出
+        // ─── 【重要修正】前回の「会計済」最終インデックスより後ろ（新しい）のアクティブな注文のみを抽出 ───
         let activeOrders = (data.orders || []).filter(o => {
           return String(o.tableId).trim() === String(tableId).trim() && 
+                 parseInt(o.rowIndex, 10) > lastCheckoutRowIndex &&
                  (o.status === "会計要請" || o.status === "調理中" || o.status === "提供済" || o.status === "提供済み");
         });
-        
-        // 【重要】定期監視側にも入店時刻フィルターを噛ませ、過去のゴミデータを誤判定基準から排除
-        if (checkInTime) {
-          activeOrders = activeOrders.filter(o => o.time >= checkInTime);
-        }
         
         if (activeOrders.length === 0) {
           document.getElementById('checkout-lock-overlay').style.display = 'none';
