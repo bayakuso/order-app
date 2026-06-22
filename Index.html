@@ -508,7 +508,7 @@
 
     let lastCheckoutRowIndex = -1; 
     let isAppDisabled = false; 
-    let initialOrdersChecked = false; // 初回データ取得が済んだかどうかの管理フラグ
+    let initialOrdersChecked = false; 
 
     let state = { allMenus: [], categories: [], currentCategory: '', cart: [] };
     let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0, currentModalQty = 1;
@@ -848,7 +848,7 @@
     }
 
     // ==========================================================
-    // 【大幅改善】親機・子機連動会計監視ロジック (5秒周期)
+    // 【決定版】インデックスに依存しない親機・子機連動会計監視ロジック (5秒周期)
     // ==========================================================
     setInterval(async function() {
       if (!initialOrdersChecked || isAppDisabled) return;
@@ -858,43 +858,41 @@
         const data = await res.json();
         const orders = data.orders || [];
         
-        // 1. 今回の入客セッションに該当する有効な注文行の抽出
-        const currentOrders = orders.filter(o => {
-          return String(o.tableId).trim() === String(tableId).trim() && 
-                 parseInt(o.rowIndex, 10) > lastCheckoutRowIndex;
-        });
+        // 全体の生データから、この卓の「会計要請」および「会計済」状態の注文を直接確認
+        const thisTableOrders = orders.filter(o => String(o.tableId).trim() === String(tableId).trim());
+        
+        // 直近インデックスセッション内の有効判定（新規の会計要請検知用）
+        const currentOrders = thisTableOrders.filter(o => parseInt(o.rowIndex, 10) > lastCheckoutRowIndex);
 
-        // 2. 現在進行中の各ステータスの存在確認
         const hasCheckoutRequested = currentOrders.some(o => o.status === "会計要請");
-        const hasActiveOrders = currentOrders.some(o => o.status === "調理中" || o.status === "提供済" || o.status === "提供済み");
-        const hasCheckoutSettled = currentOrders.some(o => o.status === "会計済");
+        const hasCheckoutSettled = thisTableOrders.some(o => o.status === "会計済");
 
         const lockOverlay = document.getElementById('checkout-lock-overlay');
         const isCurrentlyLocked = (lockOverlay.style.display === 'flex');
 
-        // ─── 【フェーズA】誰かが「会計要請」を出した時の同期処理 ───
-        if (hasCheckoutRequested && !hasCheckoutSettled) {
+        // ─── 【フェーズA】いずれかの端末で「会計要請」が発生した時の画面ロック処理 ───
+        if (hasCheckoutRequested) {
           if (!isCurrentlyLocked) {
-            // 他の操作モーダルが開いていたら全て強制クローズして画面ロック
             ['cart-modal', 'history-modal', 'option-modal'].forEach(id => closeModal(id));
             lockOverlay.style.display = 'flex';
           }
           return; 
         }
 
-        // ─── 【フェーズB】レジで「会計完了(済)」にされた、または要請後に注文データ自体が完全にクリアされた時の処理 ───
-        // 条件：現在ロック画面が表示されている 且つ (会計済が検出された、または有効な要請/進行中データがゼロになった)
-        if (isCurrentlyLocked && (hasCheckoutSettled || (!hasCheckoutRequested && !hasActiveOrders))) {
+        // ─── 【フェーズB】レジでの「会計完了（クリア）」の検知処理 ───
+        // 修正ポイント：現在ロック画面が表示されているにもかかわらず、「会計要請」状態のデータがシートから消滅した
+        // または、直接「会計済」のステータスレコードが検出された場合を会計クローズとみなす
+        if (isCurrentlyLocked && (!hasCheckoutRequested || hasCheckoutSettled)) {
           state.cart = [];
           updateCartBadge();
 
           if (isViewer) {
-            // ◆ 親機 (卓上固定端末) のクリーンアップと初期リダイレクト
+            // ◆ 親機 (卓上固定端末)：画面ロックを解除し初期画面へ自動リダイレクト
             lockOverlay.style.display = 'none';
             const baseUrl = window.location.origin + window.location.pathname + `?table=${encodeURIComponent(tableId)}&view=true`;
             window.location.href = baseUrl;
           } else {
-            // ◆ 子機 (お客様自身のスマホ連携端末) の永久ブロック処理
+            // ◆ 子機 (お客様のスマホ)：アプリの操作を永続ブロックして「使用不可」表示を固定化
             isAppDisabled = true;
             lockOverlay.style.display = 'flex';
             document.getElementById('lock-icon').innerText = "🛑";
