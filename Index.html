@@ -506,7 +506,6 @@
     const tableId = urlParams.get('table') || 'A';
     const isViewer = urlParams.get('view') === 'true';
 
-    // ─── 【重要】新規来店時に過去の最終行インデックスを特定するための変数 ───
     let lastCheckoutRowIndex = -1; 
 
     let state = { allMenus: [], categories: [], currentCategory: '', cart: [] };
@@ -514,7 +513,7 @@
 
     const NO_IMAGE_SVG = "data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22 viewBox=%220 0 400 300%22><rect width=%22400%22 height=%22300%22 fill=%22%23e0e0e0%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23888888%22 font-family=%22sans-serif%22 font-size=%2224%22 font-weight=%22bold%22>No Image</text></svg>";
 
-    // 【1】初期化処理（画面ロード時の発火）
+    // 【1】初期化処理
     window.onload = async () => {
       document.getElementById('display-table-id').innerText = tableId;
       if (isViewer) {
@@ -523,7 +522,6 @@
       document.getElementById('customer-modal').style.display = 'flex';
       updateHeaderStatusBadges();
       
-      // ─── 【追加】入店時に、現在のスプレッドシート上の「前回の会計済最終位置」を特定・初期化する ───
       await initCheckoutIndex();
 
       fetchMenus();
@@ -531,13 +529,12 @@
       setupSwipeEvents();
     };
 
-    // ─── 【新規追加】前回の最終会計クローズ行インデックスをAPI経由で取得・同期する内部処理 ───
+    // 前回の最終会計クローズ行インデックスの同期
     async function initCheckoutIndex() {
       try {
         const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
         const data = await res.json();
         const orders = data.orders || [];
-        // スプレッドシート全体の該当卓データから「会計済」の最大rowIndexを探す
         orders.forEach(o => {
           if (String(o.tableId).trim() === String(tableId).trim() && o.status === "会計済") {
             const idx = parseInt(o.rowIndex, 10);
@@ -593,7 +590,7 @@
       document.getElementById('wifi-prompt-modal').style.display = 'flex';
     }
 
-    // 【4】ヘッダーの上部ステータスバッジ（人数・入店時刻）の表示更新
+    // 【4】ヘッダーの上部ステータスバッジの表示更新
     function updateHeaderStatusBadges() {
       const num = urlParams.get('num');
       const time = urlParams.get('time');
@@ -624,7 +621,7 @@
       document.addEventListener('touchend', (e) => { if (isModalActive()) return; touchEndX = e.changedTouches[0].screenX; touchEndY = e.changedTouches[0].screenY; menuList.style.transform = ''; menuList.style.opacity = ''; handleSwipeGesture(); }, { passive: true });
     }
 
-    // 【6】アクティブなモーダルが前面に表示されているかのチェック
+    // 【6】アクティブなモーダルのチェック
     function isModalActive() { return ['customer-modal', 'cart-modal', 'history-modal', 'option-modal', 'phone-link-modal', 'wifi-prompt-modal', 'toast-popup', 'checkout-lock-overlay'].some(id => { const el = document.getElementById(id); return el && el.style.display === 'flex'; }); }
     
     // 【7】スワイプジェスチャー判定によるカテゴリの左右切り替え
@@ -753,7 +750,7 @@
       modal.style.display = 'flex';
     }
 
-    // 【16】ローカルメモリ（カート状態オブジェクト）への配列追加実行
+    // 【16】ローカルメモリへの配列追加実行
     function addToCart(menuId, qtyId) { const item = state.allMenus.find(m => m.menu_id == menuId); const qty = parseInt(document.getElementById(qtyId).innerText, 10) || 1; executeAddToCart(item, qty, null); document.getElementById(qtyId).innerText = 1; }
     function executeAddToCart(item, qty, optionText) {
       const finalName = optionText ? `${item.name} [${optionText}]` : item.name;
@@ -781,10 +778,10 @@
       document.getElementById('cart-modal').style.display = 'flex';
     }
 
-    // 【19】カートに入っている商品のインデックス指定部分削除
+    // 【19】カート商品の削除
     function removeFromCart(idx) { state.cart.splice(idx, 1); updateCartBadge(); openCartModal(); }
 
-    // 【20】注文履歴モーダル表示（IDインデックス連番による過去ログ強制遮断フィルター搭載）
+    // 【20】注文履歴モーダル表示
     async function openHistoryModal() {
       const container = document.getElementById('history-list-items');
       const bannerArea = document.getElementById('history-total-banner-area');
@@ -797,12 +794,10 @@
         const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
         const data = await res.json();
         
-        // ─── 【重要修正】前回の「会計済」最終インデックスより後ろ（新しい）データのみをこの組のデータとして認める ───
         let currentTableOrders = (data.orders || []).filter(o => {
           return String(o.tableId).trim() === String(tableId).trim() && 
                  parseInt(o.rowIndex, 10) > lastCheckoutRowIndex;
         });
-        // ───────────────────────────────────────────────────────────────────────────────────────
 
         container.innerHTML = '';
         if (currentTableOrders.length === 0) { container.innerHTML = '<p style="text-align:center; color:#888; padding:15px 0;">注文履歴はありません。</p>'; return; }
@@ -841,7 +836,7 @@
       } catch (e) { container.innerHTML = '<p style="text-align:center; color:red; padding:15px 0;">履歴取得失敗。</p>'; }
     }
 
-    // 【21】客席からの会計要請通信処理（オーバーレイロック画面展開）
+    // 【21】客席からの会計要請通信処理
     async function requestCheckout() {
       if (!confirm("お会計を要請しますか？\n※これ以上の追加注文はできなくなります。")) return;
       
@@ -868,7 +863,7 @@
       }
     }
 
-    // 【22】レジアプリ側の会計クローズを自動感知する定期監視（5秒周期・連番インデックスフィルター搭載）
+    // 【22】レジアプリ側の会計クローズを自動感知する定期監視（アラートなし・自動リロード・view=true付与）
     setInterval(async function() {
       if (document.getElementById('checkout-lock-overlay').style.display !== 'flex') return;
       
@@ -876,20 +871,20 @@
         const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
         const data = await res.json();
         
-        // ─── 【重要修正】前回の「会計済」最終インデックスより後ろ（新しい）のアクティブな注文のみを抽出 ───
         let activeOrders = (data.orders || []).filter(o => {
           return String(o.tableId).trim() === String(tableId).trim() && 
                  parseInt(o.rowIndex, 10) > lastCheckoutRowIndex &&
                  (o.status === "会計要請" || o.status === "調理中" || o.status === "提供済" || o.status === "提供済み");
         });
         
+        // 会計処理が完了（アクティブな注文がゼロ）した場合の処理
         if (activeOrders.length === 0) {
           document.getElementById('checkout-lock-overlay').style.display = 'none';
-          alert("お会計が完了しました。ご利用ありがとうございました！");
           state.cart = [];
           updateCartBadge();
           
-          const baseUrl = window.location.origin + window.location.pathname + `?table=${encodeURIComponent(tableId)}`;
+          // メッセージ表示を行わず、view=trueを持たせてリダイレクト（人数選択モーダルが自動で開きます）
+          const baseUrl = window.location.origin + window.location.pathname + `?table=${encodeURIComponent(tableId)}&view=true`;
           window.location.href = baseUrl;
         }
       } catch (e) {
@@ -897,7 +892,7 @@
       }
     }, 5000);
 
-    // 【23】画面中央へのカスタムお知らせ通知（トーストポップアップ）表示
+    // 【23】画面中央へのカスタムお知らせ通知表示
     function showCustomToast(isSuccess, title, message) {
       const overlay = document.getElementById('toast-popup'); const iconArea = document.getElementById('toast-icon-area');
       document.getElementById('toast-title-area').innerText = title; document.getElementById('toast-msg-area').innerText = message;
@@ -905,7 +900,7 @@
       overlay.style.display = 'flex'; setTimeout(() => { overlay.style.display = 'none'; }, 2500);
     }
 
-    // 【24】カート商品の確定・厨房へのデータ一括送信（POST）
+    // 【24】カート商品の確定・厨房へのデータ一括送信
     async function sendBulkOrder() {
       const btn = document.getElementById('send-order-btn'); btn.disabled = true; btn.innerText = "送信中...";
       try {
@@ -918,7 +913,7 @@
       } catch (err) { showCustomToast(false, '通信失敗', 'ネットワーク環境をご確認ください。'); btn.disabled = false; btn.innerText = "注文を確定する"; }
     }
 
-    // 【25】モーダルの非表示化（クローズ処理）
+    // 【25】モーダルの非表示化
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
   </script>
 </body>
