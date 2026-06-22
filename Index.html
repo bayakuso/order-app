@@ -746,7 +746,7 @@
       bannerArea.style.display = 'none'; checkoutBtn.style.display = 'none';
       document.getElementById('history-modal').style.display = 'flex';
       try {
-        const res = await fetch(`${GAS_URL}?mode=kitchen&action=history`);
+        const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
         const data = await res.json();
         const currentTableOrders = (data.orders || []).filter(o => String(o.tableId).trim() === String(tableId).trim());
         container.innerHTML = '';
