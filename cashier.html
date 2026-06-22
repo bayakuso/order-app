@@ -28,7 +28,6 @@
 
         window.addEventListener('DOMContentLoaded', loadActiveOrders);
 
-        // 画面を開いたとき、または更新ボタンを押したときのデータ読み込み（これはGETで正しいです）
         async function loadActiveOrders() {
             try {
                 const container = document.getElementById('cashier-list');
@@ -72,31 +71,32 @@
             }
         }
 
-        // 🔽【修正】GETから「POST（フォームデータ形式）」へ完全移行しました！
-       async function checkout(tableId, total) {
-    if (!confirm(tableId + "番卓の会計を完了しますか？")) return;
+        async function checkout(tableId, total) {
+            if (!confirm(tableId + "番卓の会計を完了しますか？")) return;
 
-    try {
-        const formData = new URLSearchParams();
-        formData.append('action', 'checkout');
-        formData.append('tableId', tableId);
+            try {
+                const formData = new URLSearchParams();
+                // 【修正】action を 'checkout' から 'final_checkout' に変更し、GASの決済処理を正しく呼び出す
+                formData.append('action', 'final_checkout');
+                formData.append('tableId', tableId);
 
-        // mode: "no-cors" を削除！これで結果を受け取れます
-        const response = await fetch(GAS_URL, {
-            method: "POST",
-            body: formData,
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-        });
-        
-        const result = await response.json();
-        if(result.status === 'success') {
-            alert("会計処理完了しました！");
-            loadActiveOrders(); 
+                const response = await fetch(GAS_URL, {
+                    method: "POST",
+                    body: formData,
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+                
+                const result = await response.json();
+                if(result.status === 'success') {
+                    alert("会計処理完了しました！");
+                    loadActiveOrders(); 
+                } else {
+                    alert("エラー: " + result.message);
+                }
+            } catch (e) {
+                alert("会計処理に失敗しました: " + e);
+            }
         }
-    } catch (e) {
-        alert("会計処理に失敗しました: " + e);
-    }
-}
     </script>
 </body>
 </html>
