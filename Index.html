@@ -7,7 +7,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     /* ==========================================
-       レスポンシブ・マルチデバイス最適化（元のカードデザインで2列化）
+       レスポンシブ・マルチデバイス最適化
        ========================================== */
     .modal-content {
       background: #fff;
@@ -51,7 +51,6 @@
       text-align: center;
     }
 
-    /* メニューリスト：基本は1列 */
     #menu-list {
       display: grid;
       grid-template-columns: 1fr;
@@ -62,7 +61,6 @@
       margin: 0 auto;
     }
 
-    /* メニューカード：画像・並び順は元のスタイルを完全に維持 */
     .menu-card {
       display: flex;
       background: #fff;
@@ -85,10 +83,9 @@
       flex-shrink: 0;
     }
 
-    /* 【画面幅 600px 以上】元のレイアウトのまま2列に並べる */
     @media (min-width: 600px) {
       #menu-list {
-        grid-template-columns: repeat(2, 1fr); /* 2列化のみ実行 */
+        grid-template-columns: repeat(2, 1fr);
         gap: 16px;
       }
     }
@@ -527,30 +524,68 @@
       
       await initCheckoutIndex();
 
+      // ◆【重要追加】リロード時の過去QR弾き処理 (子機のみ対象)
+      if (!isViewer && initialOrdersChecked && isAppDisabled) {
+        forceLockExpiredSubDevice();
+        return; 
+      }
+
       fetchMenus();
       updateCartBadge();
       setupSwipeEvents();
     };
+
+    // 時間文字列（"HH:MM"）をパースして比較用の数値（分単位）にするヘルパー関数
+    function parseTimeToMinutes(timeStr) {
+      if (!timeStr) return 0;
+      const parts = timeStr.split(':');
+      if (parts.length < 2) return 0;
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    }
 
     async function initCheckoutIndex() {
       try {
         const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
         const data = await res.json();
         const orders = data.orders || [];
+        
+        const urlTimeStr = urlParams.get('time') ? decodeURIComponent(urlParams.get('time')) : "";
+        const urlTimeMinutes = parseTimeToMinutes(urlTimeStr);
+
         orders.forEach(o => {
           if (String(o.tableId).trim() === String(tableId).trim() && o.status === "会計済") {
             const idx = parseInt(o.rowIndex, 10);
             if (idx > lastCheckoutRowIndex) {
               lastCheckoutRowIndex = idx;
             }
+            
+            // ◆【起動時判定】URLの入店時間より後に、この卓で「会計済」になった履歴があるかチェック
+            if (!isViewer && urlTimeMinutes > 0) {
+              const checkedTimeMinutes = parseTimeToMinutes(o.time);
+              if (checkedTimeMinutes >= urlTimeMinutes) {
+                isAppDisabled = true; 
+              }
+            }
           }
         });
+        
         console.log("同期された前回の最終決済クローズ行番号:", lastCheckoutRowIndex);
         initialOrdersChecked = true;
       } catch(e) {
         console.error("決済初期位置の同期に失敗しました:", e);
         initialOrdersChecked = true;
       }
+    }
+
+    // 子機（過去のQR）を永続ロック画面にする共通関数
+    function forceLockExpiredSubDevice() {
+      const lockOverlay = document.getElementById('checkout-lock-overlay');
+      lockOverlay.style.display = 'flex';
+      document.getElementById('lock-icon').innerText = "🛑";
+      document.getElementById('lock-title').innerText = "ご利用ありがとうございました";
+      document.getElementById('lock-title').style.color = "#d32f2f";
+      document.getElementById('lock-body').innerHTML = "お会計が完了したため、このQRコードは無効化されました。<br>再度ご注文される場合は、卓上端末の新しいQRコードをもう一度読み取ってください。";
+      document.getElementById('lock-spinner').style.display = "none";
     }
 
     function openGlobalPhoneLinkModal() {
@@ -560,7 +595,9 @@
       if (!canvas) return;
       canvas.innerHTML = '';
 
-      const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}`;
+      // スマホ連携用URLに、親機が確定させた現在の「入店時刻(time)」を紐付けてQRコードを生成する
+      const currentUrlParams = new URLSearchParams(window.location.search);
+      const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}&num=${encodeURIComponent(currentUrlParams.get('num')||'1')}&time=${encodeURIComponent(currentUrlParams.get('time')||'')}`;
       
       try {
         new QRCode(canvas, {
@@ -848,7 +885,7 @@
     }
 
     // ==========================================================
-    // 【決定版】インデックスに依存しない親機・子機連動会計監視ロジック (5秒周期)
+    // 会計連携監視システム (5秒周期)
     // ==========================================================
     setInterval(async function() {
       if (!initialOrdersChecked || isAppDisabled) return;
@@ -858,10 +895,7 @@
         const data = await res.json();
         const orders = data.orders || [];
         
-        // 全体の生データから、この卓の「会計要請」および「会計済」状態の注文を直接確認
         const thisTableOrders = orders.filter(o => String(o.tableId).trim() === String(tableId).trim());
-        
-        // 直近インデックスセッション内の有効判定（新規の会計要請検知用）
         const currentOrders = thisTableOrders.filter(o => parseInt(o.rowIndex, 10) > lastCheckoutRowIndex);
 
         const hasCheckoutRequested = currentOrders.some(o => o.status === "会計要請");
@@ -870,7 +904,6 @@
         const lockOverlay = document.getElementById('checkout-lock-overlay');
         const isCurrentlyLocked = (lockOverlay.style.display === 'flex');
 
-        // ─── 【フェーズA】いずれかの端末で「会計要請」が発生した時の画面ロック処理 ───
         if (hasCheckoutRequested) {
           if (!isCurrentlyLocked) {
             ['cart-modal', 'history-modal', 'option-modal'].forEach(id => closeModal(id));
@@ -879,27 +912,17 @@
           return; 
         }
 
-        // ─── 【フェーズB】レジでの「会計完了（クリア）」の検知処理 ───
-        // 修正ポイント：現在ロック画面が表示されているにもかかわらず、「会計要請」状態のデータがシートから消滅した
-        // または、直接「会計済」のステータスレコードが検出された場合を会計クローズとみなす
         if (isCurrentlyLocked && (!hasCheckoutRequested || hasCheckoutSettled)) {
           state.cart = [];
           updateCartBadge();
 
           if (isViewer) {
-            // ◆ 親機 (卓上固定端末)：画面ロックを解除し初期画面へ自動リダイレクト
             lockOverlay.style.display = 'none';
             const baseUrl = window.location.origin + window.location.pathname + `?table=${encodeURIComponent(tableId)}&view=true`;
             window.location.href = baseUrl;
           } else {
-            // ◆ 子機 (お客様のスマホ)：アプリの操作を永続ブロックして「使用不可」表示を固定化
             isAppDisabled = true;
-            lockOverlay.style.display = 'flex';
-            document.getElementById('lock-icon').innerText = "🛑";
-            document.getElementById('lock-title').innerText = "ご利用ありがとうございました";
-            document.getElementById('lock-title').style.color = "#d32f2f";
-            document.getElementById('lock-body').innerHTML = "お会計が完了したため、この画面は終了しました。<br>再度ご注文される場合は、卓上端末のQRコードをもう一度読み取ってください。";
-            document.getElementById('lock-spinner').style.display = "none";
+            forceLockExpiredSubDevice();
           }
         }
       } catch (e) {
