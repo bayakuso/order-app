@@ -61,14 +61,23 @@
       margin: 0 auto;
     }
 
+    /* ─── メニューカードのレイアウト修正 ─── */
     .menu-card {
       display: flex;
+      flex-direction: column; /* 上下並び（上にメニュー名、下にコンテンツ） */
+      gap: 8px;
       background: #fff;
       border-radius: 8px;
-      padding: 10px;
+      padding: 12px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      align-items: center;
       box-sizing: border-box;
+      width: 100%;
+    }
+
+    /* 下部の画像と注文情報エリアのコンテナ */
+    .menu-body {
+      display: flex;
+      align-items: center;
       width: 100%;
     }
 
@@ -178,22 +187,24 @@
       flex-direction: column;
       justify-content: space-between;
       min-width: 0;
+      align-self: stretch; /* 高さを揃えて上下の配置を安定させる */
     }
     .menu-name {
-      font-size: 0.95rem;
+      font-size: 1.05rem; /* 卓上端末で見やすいようわずかに大きく */
       font-weight: bold;
-      margin-bottom: 4px;
       white-space: normal;
       word-break: break-all;
+      line-height: 1.3;
     }
     .menu-meta {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-top: auto;
+      width: 100%;
     }
     .menu-price {
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       font-weight: bold;
       color: #d32f2f;
     }
@@ -715,6 +726,7 @@
 
     function scrollToActiveTab() { const activeTab = document.querySelector('.category-tab.active'); if (activeTab) activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
 
+    /* ─── メニュー生成処理のレイアウト変更 ─── */
     function renderMenuList() {
       const listContainer = document.getElementById('menu-list'); listContainer.innerHTML = '';
       const filtered = state.allMenus.filter(m => m.category === state.currentCategory);
@@ -744,13 +756,16 @@
           `;
         }
 
+        // HTML構造を修正：メニュー名を上部に、コンテンツ（画像・価格・ボタン）を下部に配置
         card.innerHTML = `
-          <img src="${imgSrc}" class="menu-img" alt="${item.name}" onerror="this.onerror=null; this.src=NO_IMAGE_SVG;">
-          <div class="menu-details">
-            <div class="menu-name">${item.name}</div>
-            <div class="menu-meta">
-              <div class="menu-price">${Number(item.price).toLocaleString()}</div>
-              <div class="action-area">${orderControlsHtml}</div>
+          <div class="menu-name">${item.name}</div>
+          <div class="menu-body">
+            <img src="${imgSrc}" class="menu-img" alt="${item.name}" onerror="this.onerror=null; this.src=NO_IMAGE_SVG;">
+            <div class="menu-details">
+              <div class="menu-meta">
+                <div class="menu-price">${Number(item.price).toLocaleString()}</div>
+                <div class="action-area">${orderControlsHtml}</div>
+              </div>
             </div>
           </div>
         `;
