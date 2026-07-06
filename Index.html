@@ -2,7 +2,10 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- フルスクリーン・Webアプリ化用の設定を追加 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>注文アプリ</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
@@ -61,10 +64,10 @@
       margin: 0 auto;
     }
 
-    /* ─── メニューカードのレイアウト修正 ─── */
+    /* ─── メニューカードのレイアウト ─── */
     .menu-card {
       display: flex;
-      flex-direction: column; /* 上下並び（上にメニュー名、下にコンテンツ） */
+      flex-direction: column;
       gap: 8px;
       background: #fff;
       border-radius: 8px;
@@ -74,7 +77,6 @@
       width: 100%;
     }
 
-    /* 下部の画像と注文情報エリアのコンテナ */
     .menu-body {
       display: flex;
       align-items: center;
@@ -107,6 +109,8 @@
       color: #333;
       user-select: none;
       -webkit-user-select: none;
+      /* iPhoneのノッチ（凹み）対策 */
+      padding-top: env(safe-area-inset-top);
     }
     header {
       background: #333;
@@ -185,30 +189,35 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: center;
+      align-items: flex-end;
       min-width: 0;
-      align-self: stretch; /* 高さを揃えて上下の配置を安定させる */
+      align-self: stretch;
     }
     .menu-name {
-      font-size: 1.05rem; /* 卓上端末で見やすいようわずかに大きく */
+      font-size: 1.05rem;
       font-weight: bold;
       white-space: normal;
       word-break: break-all;
       line-height: 1.3;
     }
-    .menu-meta {
+    
+    .price-action-container {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: auto;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
       width: 100%;
     }
+
     .menu-price {
       font-size: 1.15rem;
       font-weight: bold;
       color: #d32f2f;
+      line-height: 1;
     }
     .menu-price::after { content: ' 円'; font-size: 0.8rem; color: #333; }
+    
     .controls-row {
       display: flex;
       align-items: center;
@@ -255,7 +264,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 16px;
+      padding: 10px 16px env(safe-area-inset-bottom) 16px; /* ノッチ対策 */
       box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
       z-index: 110;
     }
@@ -535,7 +544,6 @@
       
       await initCheckoutIndex();
 
-      // ◆【重要追加】リロード時の過去QR弾き処理 (子機のみ対象)
       if (!isViewer && initialOrdersChecked && isAppDisabled) {
         forceLockExpiredSubDevice();
         return; 
@@ -546,7 +554,6 @@
       setupSwipeEvents();
     };
 
-    // 時間文字列（"HH:MM"）をパースして比較用の数値（分単位）にするヘルパー関数
     function parseTimeToMinutes(timeStr) {
       if (!timeStr) return 0;
       const parts = timeStr.split(':');
@@ -570,7 +577,6 @@
               lastCheckoutRowIndex = idx;
             }
             
-            // ◆【起動時判定】URLの入店時間より後に、この卓で「会計済」になった履歴があるかチェック
             if (!isViewer && urlTimeMinutes > 0) {
               const checkedTimeMinutes = parseTimeToMinutes(o.time);
               if (checkedTimeMinutes >= urlTimeMinutes) {
@@ -588,7 +594,6 @@
       }
     }
 
-    // 子機（過去のQR）を永続ロック画面にする共通関数
     function forceLockExpiredSubDevice() {
       const lockOverlay = document.getElementById('checkout-lock-overlay');
       lockOverlay.style.display = 'flex';
@@ -606,7 +611,6 @@
       if (!canvas) return;
       canvas.innerHTML = '';
 
-      // スマホ連携用URLに、親機が確定させた現在の「入店時刻(time)」を紐付けてQRコードを生成する
       const currentUrlParams = new URLSearchParams(window.location.search);
       const targetUrl = `${window.location.origin}${window.location.pathname}?table=${encodeURIComponent(tableId)}&num=${encodeURIComponent(currentUrlParams.get('num')||'1')}&time=${encodeURIComponent(currentUrlParams.get('time')||'')}`;
       
@@ -680,13 +684,32 @@
       }
     }
 
+    /* ─── 修正：確定のタップをフックにしてフルスクリーン化を実行 ─── */
     function submitModalQty() {
       const guestCount = document.getElementById('modal-guest-count').value;
       const now = new Date(); const timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
       urlParams.set('num', guestCount); urlParams.set('time', encodeURIComponent(timeStr));
       window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
       updateHeaderStatusBadges();
+      
+      // ユーザー操作イベントのタイミングでFullscreen APIを発火
+      requestFullscreenMode();
+      
       closeModal('customer-modal');
+    }
+
+    /* フルスクリーン処理の共通関数 */
+    function requestFullscreenMode() {
+      const docEl = document.documentElement;
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(err => console.log("フルスクリーン移行失敗: ", err));
+      } else if (docEl.mozRequestFullScreen) { /* Firefox */
+        docEl.mozRequestFullScreen();
+      } else if (docEl.webkitRequestFullscreen) { /* Chrome, Safari, Opera */
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.msRequestFullscreen) { /* IE/Edge */
+        docEl.msRequestFullscreen();
+      }
     }
 
     async function fetchMenus() {
@@ -726,7 +749,6 @@
 
     function scrollToActiveTab() { const activeTab = document.querySelector('.category-tab.active'); if (activeTab) activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }
 
-    /* ─── メニュー生成処理のレイアウト変更 ─── */
     function renderMenuList() {
       const listContainer = document.getElementById('menu-list'); listContainer.innerHTML = '';
       const filtered = state.allMenus.filter(m => m.category === state.currentCategory);
@@ -741,12 +763,12 @@
 
         const qtyId = `qty-${item.menu_id}`;
         const rawOptionValue = item.options || item.option || '';
-        let orderControlsHtml = '';
+        let buttonAreaHtml = '';
         if (rawOptionValue && String(rawOptionValue).trim() !== '') {
           item.options = String(rawOptionValue).trim();
-          orderControlsHtml = `<button class="add-cart-btn has-option" onclick="openOptionModal('${item.menu_id}')">選択</button>`;
+          buttonAreaHtml = `<button class="add-cart-btn has-option" onclick="openOptionModal('${item.menu_id}')">選択</button>`;
         } else {
-          orderControlsHtml = `
+          buttonAreaHtml = `
             <div class="controls-row">
               <button class="qty-btn" onclick="inlineChangeQty('${qtyId}', -1)">−</button>
               <span class="qty-display" id="${qtyId}">1</span>
@@ -756,15 +778,14 @@
           `;
         }
 
-        // HTML構造を修正：メニュー名を上部に、コンテンツ（画像・価格・ボタン）を下部に配置
         card.innerHTML = `
           <div class="menu-name">${item.name}</div>
           <div class="menu-body">
             <img src="${imgSrc}" class="menu-img" alt="${item.name}" onerror="this.onerror=null; this.src=NO_IMAGE_SVG;">
             <div class="menu-details">
-              <div class="menu-meta">
+              <div class="price-action-container">
                 <div class="menu-price">${Number(item.price).toLocaleString()}</div>
-                <div class="action-area">${orderControlsHtml}</div>
+                <div class="action-buttons">${buttonAreaHtml}</div>
               </div>
             </div>
           </div>
@@ -899,9 +920,6 @@
       }
     }
 
-    // ==========================================================
-    // 会計連携監視システム (5秒周期)
-    // ==========================================================
     setInterval(async function() {
       if (!initialOrdersChecked || isAppDisabled) return;
       
