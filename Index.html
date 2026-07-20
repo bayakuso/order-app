@@ -558,9 +558,21 @@
       }, { once: true });
     };
 
+    // ─── 汎用関数: どんな日時表記からでも HH:mm を直接抽出 ───
+    function extractHHMM(timeStr) {
+      if (!timeStr) return '';
+      const match = String(timeStr).match(/([0-1]?[0-9]|2[0-3]):[0-5][0-9]/);
+      if (match) {
+        const parts = match[0].split(':');
+        return `${String(parts[0]).padStart(2, '0')}:${String(parts[1]).padStart(2, '0')}`;
+      }
+      return String(timeStr);
+    }
+
     function parseTimeToMinutes(timeStr) {
-      if (!timeStr) return 0;
-      const parts = timeStr.split(':');
+      const hhmm = extractHHMM(timeStr);
+      if (!hhmm) return 0;
+      const parts = hhmm.split(':');
       if (parts.length < 2) return 0;
       return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
     }
@@ -629,8 +641,12 @@
       const num = urlParams.get('num'); const time = urlParams.get('time');
       if (num) { document.getElementById('display-guest-count').innerText = num; document.getElementById('display-guest-badge').style.display = 'inline-block'; } 
       else { document.getElementById('display-guest-badge').style.display = 'none'; }
-      if (time) { document.getElementById('display-start-time').innerText = decodeURIComponent(time); document.getElementById('display-time-badge').style.display = 'inline-block'; } 
-      else { document.getElementById('display-time-badge').style.display = 'none'; }
+      if (time) { 
+        document.getElementById('display-start-time').innerText = extractHHMM(decodeURIComponent(time)); 
+        document.getElementById('display-time-badge').style.display = 'inline-block'; 
+      } else { 
+        document.getElementById('display-time-badge').style.display = 'none'; 
+      }
     }
 
     function setupSwipeEvents() {
@@ -657,8 +673,10 @@
 
     function submitModalQty() {
       const guestCount = document.getElementById('modal-guest-count').value;
-      const now = new Date(); const timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
-      urlParams.set('num', guestCount); urlParams.set('time', encodeURIComponent(timeStr));
+      const now = new Date(); 
+      const timeStr = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+      urlParams.set('num', guestCount); 
+      urlParams.set('time', encodeURIComponent(timeStr));
       window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
       updateHeaderStatusBadges();
       triggerMobileFullscreen();
@@ -826,15 +844,8 @@
             else statusLabel = '<span style="color: #ff9800; font-weight: bold; background: #fff3e0; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">調理中</span>';
           }
 
-          // ─── 修正：時刻文字列（HH:mm）の直接抽出（7時間のタイムゾーンズレ防止） ───
-          let formattedTime = item.time || '';
-          const timeMatch = String(formattedTime).match(/([0-1]?[0-9]|2[0-3]):[0-5][0-9]/);
-          if (timeMatch) {
-            const parts = timeMatch[0].split(':');
-            let hours = String(parts[0]).padStart(2, '0');
-            let minutes = String(parts[1]).padStart(2, '0');
-            formattedTime = `${hours}:${minutes}`;
-          }
+          // 時間表示の整形（文字列からHH:mmだけを直接切り出す）
+          const formattedTime = extractHHMM(item.time);
 
           row.innerHTML = `<div class="cart-item-info"><div class="cart-item-name">${cleanName}</div><div class="cart-item-price-label" style="margin-top:3px;">${statusLabel} <span style="color:#999; margin-left:5px;">${formattedTime}</span></div></div><div style="font-weight: bold; color: #333;">${itemQty} 点</div>`;
           container.appendChild(row);
