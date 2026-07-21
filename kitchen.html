@@ -171,29 +171,29 @@
     }
 
     // 3. 提供済 or キャンセルのステータス更新処理
-    function updateStatus(orderId, status, menuName) {
-      if(!confirm(`【${menuName}】を「${status}」にしますか？`)) return;
+function updateStatus(orderId, status, menuName) {
+  if(!confirm(`【${menuName}】を「${status}」にしますか？`)) return;
 
-      const params = new URLSearchParams();
-      params.append('action', 'update_status');
-      params.append('orderId', orderId);
-      params.append('status', status);
+  const params = new URLSearchParams();
+  params.append('action', 'update_status');
+  params.append('orderId', orderId);
+  params.append('status', status);
 
-      fetch(GAS_URL, {
-        method: 'POST',
-        body: params,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      })
-      .then(response => response.json())
-      .then(res => {
-        if(res.status === 'success') {
-          loadKitchenData(); // 画面を再読み込み
-        } else {
-          alert("エラー: " + res.message);
-        }
-      })
-      .catch(err => alert("通信に失敗しました。"));
+  fetch(GAS_URL, {
+    method: 'POST',
+    body: params,
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  })
+  .then(response => response.json())
+  .then(res => {
+    if(res.status === 'success') {
+      loadKitchenData(); // 画面を再読み込み
+    } else {
+      alert("エラー: " + res.message);
     }
+  })
+  .catch(err => alert("通信に失敗しました。"));
+}
 
     // 4. 口頭注文モーダル内のセレクトボックス作成
     function updateMenuSelect(menus) {
