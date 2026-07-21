@@ -692,20 +692,49 @@
       setTimeout(() => { window.scrollTo(0, 1); }, 100);
     }
 
-    async function fetchMenus() {
-      try {
-        const response = await fetch(GAS_URL);
-        const data = await response.json();
-        state.allMenus = data;
-        state.categories = [...new Set(state.allMenus.map(m => m.category).filter(Boolean))];
-        const targetCat = urlParams.get('cat');
-        if (targetCat && state.categories.includes(decodeURIComponent(targetCat))) { state.currentCategory = decodeURIComponent(targetCat); } 
-        else if (state.categories.length > 0) { state.currentCategory = state.categories[0]; }
-        buildCategoryBar(); renderMenuList();
-      } catch (err) {
-        document.getElementById('menu-list').innerHTML = `<p style="text-align:center;color:red;padding:20px;">データ取得失敗。<br>${err.toString()}</p>`;
-      }
+  async function fetchMenus() {
+  const listContainer = document.getElementById('menu-list');
+  try {
+    // リダイレクトに追従する設定を追加
+    const response = await fetch(GAS_URL, {
+      method: "GET",
+      redirect: "follow"
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTPエラー: ${response.status}`);
     }
+
+    const data = await response.json();
+    
+    if (!Array.isArray(data) || data.length === 0) {
+      listContainer.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">メニューが登録されていません。</p>';
+      return;
+    }
+
+    state.allMenus = data;
+    state.categories = [...new Set(state.allMenus.map(m => m.category).filter(Boolean))];
+    
+    const targetCat = urlParams.get('cat');
+    if (targetCat && state.categories.includes(decodeURIComponent(targetCat))) {
+      state.currentCategory = decodeURIComponent(targetCat);
+    } else if (state.categories.length > 0) {
+      state.currentCategory = state.categories[0];
+    }
+    
+    buildCategoryBar();
+    renderMenuList();
+  } catch (err) {
+    console.error("Fetch error:", err);
+    listContainer.innerHTML = `
+      <div style="text-align:center; color:#d32f2f; padding:20px;">
+        <p style="font-weight:bold;">データ取得失敗</p>
+        <p style="font-size:0.8rem; color:#666;">${err.message}</p>
+        <button onclick="fetchMenus()" style="margin-top:10px; padding:6px 12px;">再読み込み</button>
+      </div>
+    `;
+  }
+}
 
     function buildCategoryBar() {
       const bar = document.getElementById('category-bar'); bar.innerHTML = '';
