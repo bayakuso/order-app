@@ -846,73 +846,91 @@
 
     function removeFromCart(idx) { state.cart.splice(idx, 1); updateCartBadge(); openCartModal(); }
 
-    async function openHistoryModal() {
-      const container = document.getElementById('history-list-items'); const bannerArea = document.getElementById('history-total-banner-area');
-      const totalDisplay = document.getElementById('history-cumulative-total'); const checkoutBtn = document.getElementById('checkout-action-btn');
-      container.innerHTML = '<p style="text-align:center; color:#888; padding:15px 0;">最新状態を取得中...</p>';
-      bannerArea.style.display = 'none'; checkoutBtn.style.display = 'none'; document.getElementById('history-modal').style.display = 'flex';
-      try {
-        const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
-        const data = await res.json();
-        let currentTableOrders = (data.orders || []).filter(o => String(o.tableId).trim() === String(tableId).trim() && parseInt(o.rowIndex, 10) > lastCheckoutRowIndex);
-        container.innerHTML = '';
-        if (currentTableOrders.length === 0) { container.innerHTML = '<p style="text-align:center; color:#888; padding:15px 0;">注文履歴はありません。</p>'; return; }
-        let cumulativeTotal = 0; checkoutBtn.style.display = 'block';
-        currentTableOrders.reverse().forEach((item) => {
-          const row = document.createElement('div'); row.className = 'cart-item-row';
-          const cleanName = item.menuName.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '').trim();
-          const matchedMenu = state.allMenus.find(m => cleanName.startsWith(m.name.trim()));
-          let fallbackUnitPrice = matchedMenu ? Number(matchedMenu.price) : 0;
-          let parsedPrice = Number(item.price) || 0; const itemQty = Number(item.quantity) || 0; const currentStatus = String(item.status).trim();
-          let statusLabel = '';
-          if (currentStatus === '取消' || currentStatus === 'キャンセル') {
-            statusLabel = '<span style="color: #d32f2f; font-weight: bold; background: #ffebee; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">キャンセル</span>';
-          } else {
-            cumulativeTotal += (parsedPrice > 0) ? parsedPrice * itemQty : fallbackUnitPrice * itemQty;
-            if (currentStatus === '提供済' || currentStatus === '提供済み') statusLabel = '<span style="color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">提供済</span>';
-            else statusLabel = '<span style="color: #ff9800; font-weight: bold; background: #fff3e0; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">調理中</span>';
-          }
+  async function openHistoryModal() {
+  const container = document.getElementById('history-list-items');
+  const bannerArea = document.getElementById('history-total-banner-area');
+  const totalDisplay = document.getElementById('history-cumulative-total');
+  const checkoutBtn = document.getElementById('checkout-action-btn');
 
-          const formattedTime = extractHHMM(item.time);
+  container.innerHTML = '<p style="text-align:center; color:#888; padding:15px 0;">最新状態を取得中...</p>';
+  bannerArea.style.display = 'none';
+  checkoutBtn.style.display = 'none';
+  document.getElementById('history-modal').style.display = 'flex';
 
-          row.innerHTML = `<div class="cart-item-info"><div class="cart-item-name">${cleanName}</div><div class="cart-item-price-label" style="margin-top:3px;">${statusLabel} <span style="color:#999; margin-left:5px;">${formattedTime}</span></div></div><div style="font-weight: bold; color: #333;">${itemQty} 点</div>`;
-          container.appendChild(row);
-        });
-        totalDisplay.innerText = `${cumulativeTotal.toLocaleString()} 円`; bannerArea.style.display = 'block';
-      } catch (e) { container.innerHTML = '<p style="text-align:center; color:red; padding:15px 0;">履歴取得失敗。</p>'; }
+  try {
+    const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
+    const data = await res.json();
+    
+    // 直近の「会計済」より後の注文（今回の来店分）を全件抽出
+    let currentTableOrders = (data.orders || []).filter(o => 
+      String(o.tableId).trim() === String(tableId).trim() && 
+      parseInt(o.rowIndex, 10) > lastCheckoutRowIndex
+    );
+
+    container.innerHTML = '';
+    if (currentTableOrders.length === 0) {
+      container.innerHTML = '<p style="text-align:center; color:#888; padding:15px 0;">ご注文履歴はありません。</p>';
+      return;
     }
 
-    async function requestCheckout() {
-      if (!confirm("お会計を要請しますか？\n※これ以上の追加注文はできなくなります。")) return;
-      const btn = document.getElementById('checkout-action-btn'); btn.disabled = true; btn.innerText = "処理中...";
-      try {
-        const postUrl = `${GAS_URL}?action=checkout&tableId=${encodeURIComponent(tableId)}`;
-        const response = await fetch(postUrl, { method: 'POST' }); const result = await response.json();
-        if (result.status === 'success') { closeModal('history-modal'); document.getElementById('checkout-lock-overlay').style.display = 'flex'; } 
-        else { alert("会計処理エラー: " + result.message); }
-      } catch (err) { alert("通信に失敗しました。ネットワーク環境をご確認ください。"); } 
-      finally { btn.disabled = false; btn.innerText = "お会計に進む"; }
-    }
+    let cumulativeTotal = 0;
+    checkoutBtn.style.display = 'block';
 
-    setInterval(async function() {
-      if (!initialOrdersChecked || isAppDisabled) return;
-      try {
-        const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
-        const data = await res.json(); const orders = data.orders || [];
-        const thisTableOrders = orders.filter(o => String(o.tableId).trim() === String(tableId).trim());
-        const currentOrders = thisTableOrders.filter(o => parseInt(o.rowIndex, 10) > lastCheckoutRowIndex);
-        const hasCheckoutRequested = currentOrders.some(o => o.status === "会計要請");
-        const hasCheckoutSettled = thisTableOrders.some(o => o.status === "会計済");
-        const lockOverlay = document.getElementById('checkout-lock-overlay');
-        const isCurrentlyLocked = (lockOverlay.style.display === 'flex');
-        if (hasCheckoutRequested) { if (!isCurrentlyLocked) { ['cart-modal', 'history-modal', 'option-modal'].forEach(id => closeModal(id)); lockOverlay.style.display = 'flex'; } return; }
-        if (isCurrentlyLocked && (!hasCheckoutRequested || hasCheckoutSettled)) {
-          state.cart = []; updateCartBadge();
-          if (isViewer) { lockOverlay.style.display = 'none'; window.location.href = window.location.origin + window.location.pathname + `?table=${encodeURIComponent(tableId)}&view=true`; } 
-          else { isAppDisabled = true; forceLockExpiredSubDevice(); }
+    // 新しい注文順（降順）に表示
+    currentTableOrders.reverse().forEach((item) => {
+      const row = document.createElement('div');
+      row.className = 'cart-item-row';
+      
+      const cleanName = item.menuName.replace(/<br\s*\/?>/gi, '').replace(/\n/g, '').trim();
+      const matchedMenu = state.allMenus.find(m => cleanName.startsWith(m.name.trim()));
+      
+      let fallbackUnitPrice = matchedMenu ? Number(matchedMenu.price) : 0;
+      let parsedPrice = Number(item.price) || 0;
+      const itemQty = Number(item.quantity) || 0;
+      const currentStatus = String(item.status).trim();
+
+      let statusLabel = '';
+      
+      // --- ステータス判定と金額計算 ---
+      if (currentStatus.includes('取消') || currentStatus.includes('キャンセル')) {
+        // キャンセル品：赤バッジ（合計金額には加算しない）
+        statusLabel = '<span style="color: #d32f2f; font-weight: bold; background: #ffebee; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">キャンセル</span>';
+      } else {
+        // 有効な注文：合計金額に加算
+        const unitPrice = (parsedPrice > 0) ? parsedPrice : fallbackUnitPrice;
+        cumulativeTotal += (unitPrice * itemQty);
+
+        if (currentStatus.includes('提供')) {
+          // 提供済み：緑バッジ
+          statusLabel = '<span style="color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">提供済</span>';
+        } else {
+          // 調理中 / 未提供：オレンジバッジ
+          statusLabel = '<span style="color: #ff9800; font-weight: bold; background: #fff3e0; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">調理中</span>';
         }
-      } catch (e) { console.error("決済連携監視システムエラー:", e); }
-    }, 5000);
+      }
+
+      const formattedTime = extractHHMM(item.time);
+
+      row.innerHTML = `
+        <div class="cart-item-info">
+          <div class="cart-item-name">${cleanName}</div>
+          <div class="cart-item-price-label" style="margin-top:3px;">
+            ${statusLabel} <span style="color:#999; margin-left:5px;">${formattedTime}</span>
+          </div>
+        </div>
+        <div style="font-weight: bold; color: #333;">${itemQty} 点</div>
+      `;
+      container.appendChild(row);
+    });
+
+    totalDisplay.innerText = `${cumulativeTotal.toLocaleString()} 円`;
+    bannerArea.style.display = 'block';
+
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = '<p style="text-align:center; color:red; padding:15px 0;">履歴取得失敗。</p>';
+  }
+}
 
     function showCustomToast(isSuccess, title, message) {
       const overlay = document.getElementById('toast-popup'); const iconArea = document.getElementById('toast-icon-area');
