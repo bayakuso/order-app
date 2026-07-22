@@ -846,7 +846,7 @@
 
     function removeFromCart(idx) { state.cart.splice(idx, 1); updateCartBadge(); openCartModal(); }
 
-  async function openHistoryModal() {
+async function openHistoryModal() {
   const container = document.getElementById('history-list-items');
   const bannerArea = document.getElementById('history-total-banner-area');
   const totalDisplay = document.getElementById('history-cumulative-total');
@@ -858,10 +858,18 @@
   document.getElementById('history-modal').style.display = 'flex';
 
   try {
-    const res = await fetch(`${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}`);
+    // ★ redirect: 'follow' を追加してリダイレクト先（script.googleusercontent.com）のデータを取得する
+    const requestUrl = `${GAS_URL}?mode=kitchen&action=history&tableId=${encodeURIComponent(tableId)}&_t=${new Date().getTime()}`;
+    const res = await fetch(requestUrl, {
+      method: 'GET',
+      redirect: 'follow'
+    });
+
+    if (!res.ok) throw new Error("HTTPエラー: " + res.status);
+
     const data = await res.json();
     
-    // 直近の「会計済」より後の注文（今回の来店分）を全件抽出
+    // 直近の「会計済」より後の注文を抽出（提供済・調理中・キャンセル含む全件）
     let currentTableOrders = (data.orders || []).filter(o => 
       String(o.tableId).trim() === String(tableId).trim() && 
       parseInt(o.rowIndex, 10) > lastCheckoutRowIndex
@@ -876,7 +884,7 @@
     let cumulativeTotal = 0;
     checkoutBtn.style.display = 'block';
 
-    // 新しい注文順（降順）に表示
+    // 降順で表示
     currentTableOrders.reverse().forEach((item) => {
       const row = document.createElement('div');
       row.className = 'cart-item-row';
@@ -891,20 +899,15 @@
 
       let statusLabel = '';
       
-      // --- ステータス判定と金額計算 ---
       if (currentStatus.includes('取消') || currentStatus.includes('キャンセル')) {
-        // キャンセル品：赤バッジ（合計金額には加算しない）
         statusLabel = '<span style="color: #d32f2f; font-weight: bold; background: #ffebee; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">キャンセル</span>';
       } else {
-        // 有効な注文：合計金額に加算
         const unitPrice = (parsedPrice > 0) ? parsedPrice : fallbackUnitPrice;
         cumulativeTotal += (unitPrice * itemQty);
 
         if (currentStatus.includes('提供')) {
-          // 提供済み：緑バッジ
           statusLabel = '<span style="color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">提供済</span>';
         } else {
-          // 調理中 / 未提供：オレンジバッジ
           statusLabel = '<span style="color: #ff9800; font-weight: bold; background: #fff3e0; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">調理中</span>';
         }
       }
@@ -927,7 +930,7 @@
     bannerArea.style.display = 'block';
 
   } catch (e) {
-    console.error(e);
+    console.error("履歴取得エラー:", e);
     container.innerHTML = '<p style="text-align:center; color:red; padding:15px 0;">履歴取得失敗。</p>';
   }
 }
